@@ -31,7 +31,7 @@
 <h3 align="center">Mike's Mirth Code</h3>
 
   <p align="center">
-    project_description
+    This is a collection of some scripts I use in production Mirth deployments.
     <br />
     <a href="https://github.com/MichaelLeeHobbs/mmc"><strong>Explore the docs »</strong></a>
     <br />
