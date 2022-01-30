@@ -75,8 +75,8 @@ TODO
 
 <!-- USAGE EXAMPLES -->
 ## Examples
-* [Custom Batch Processor](https://github.com/MichaelLeeHobbs/mmc/blob/main/src/Examples/customBatchProcessor.js)
-* [Standalone Mirth Backup](https://github.com/MichaelLeeHobbs/mmc/tree/main/src/codeTempaltes/StandaloneMirthBackup)
+* [Custom Batch Processor](https://github.com/MichaelLeeHobbs/mmc/blob/main/src/Examples/customBatchProcessor.js) An example of how to setup a custom batch processor for CSV files that uses the first row as the header and converts each row into JSON where properties are the headers.
+* [Standalone Mirth Backup](https://github.com/MichaelLeeHobbs/mmc/tree/main/src/codeTempaltes/StandaloneMirthBackup) 
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
