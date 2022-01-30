@@ -33,8 +33,6 @@
   <p align="center">
     This is a collection of some scripts I use in production Mirth deployments.
     <br />
-    <a href="https://github.com/MichaelLeeHobbs/mmc"><strong>Explore the docs »</strong></a>
-    <br />
     <br />
     <a href="https://github.com/MichaelLeeHobbs/mmc/issues">Report Bug</a>
     ·
