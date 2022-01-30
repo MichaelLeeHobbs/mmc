@@ -22,18 +22,13 @@
 [![Stargazers][stars-shield]][stars-url]
 [![Issues][issues-shield]][issues-url]
 [![MIT License][license-shield]][license-url]
-[![LinkedIn][linkedin-shield]][linkedin-url]
 
 
 
 <!-- PROJECT LOGO -->
 <br />
 <div align="center">
-  <a href="https://github.com/MichaelLeeHobbs/mmc">
-    <img src="images/logo.png" alt="Logo" width="80" height="80">
-  </a>
-
-<h3 align="center">project_title</h3>
+<h3 align="center">Mike's Mirth Code</h3>
 
   <p align="center">
     project_description
@@ -41,8 +36,6 @@
     <a href="https://github.com/MichaelLeeHobbs/mmc"><strong>Explore the docs »</strong></a>
     <br />
     <br />
-    <a href="https://github.com/MichaelLeeHobbs/mmc">View Demo</a>
-    ·
     <a href="https://github.com/MichaelLeeHobbs/mmc/issues">Report Bug</a>
     ·
     <a href="https://github.com/MichaelLeeHobbs/mmc/issues">Request Feature</a>
@@ -55,16 +48,8 @@
 <details>
   <summary>Table of Contents</summary>
   <ol>
-    <li>
-      <a href="#about-the-project">About The Project</a>
-    </li>
-    <li>
-      <a href="#getting-started">Getting Started</a>
-      <ul>
-        <li><a href="#prerequisites">Prerequisites</a></li>
-        <li><a href="#installation">Installation</a></li>
-      </ul>
-    </li>
+    <li><a href="#about-the-project">About The Project</a></li>
+    <li><a href="#getting-started">Getting Started</a></li>
     <li><a href="#usage">Usage</a></li>
     <li><a href="#roadmap">Roadmap</a></li>
     <li><a href="#contributing">Contributing</a></li>
@@ -92,16 +77,10 @@ TODO
 
 <!-- USAGE EXAMPLES -->
 ## Examples
-
 * [Custom Batch Processor](https://github.com/MichaelLeeHobbs/mmc/blob/main/src/Examples/customBatchProcessor.js)
 * [Standalone Mirth Backup](https://github.com/MichaelLeeHobbs/mmc/tree/main/src/codeTempaltes/StandaloneMirthBackup)
 
 <p align="right">(<a href="#top">back to top</a>)</p>
-
-## Modules/Templates
-
-<p align="right">(<a href="#top">back to top</a>)</p>
-
 
 <!-- ROADMAP -->
 ## Roadmap
