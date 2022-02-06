@@ -310,9 +310,8 @@ HL7Message.prototype._getRef = function (key) {
 
 /**
  * Get a segments computed index
- * @param {Object} options.seg
- * @param {string} options.seg
- * @param {number} options.segIdx
+ * @param {string} seg
+ * @param {number} segIdx
  * @return {number}
  * @private
  */
