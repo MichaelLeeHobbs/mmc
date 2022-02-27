@@ -1,81 +1,26 @@
+/**
+ * Encoding Class used by HL7Message to handle encoding
+ * @param {Object} [options=]
+ * @param {string} [options.field='|']
+ * @param {string} [options.component='^']
+ * @param {string} [options.fieldRepetition='~']
+ * @param {string} [options.escape='\']
+ * @param {string} [options.subcomponent='&']
+ * @param {string} [options.segment='\r']
+ * @param {string} [options.hl7] HL7 message to parse for encoding
+ * @constructor
+ */
 function Encoding(options) {
   options = options || {}
-  this._field = options.field || '|'
-  this._component = options.component || '^'
-  this._fieldRepetition = options.fieldRepetition || '~'
-  this._escape = options.escape || '\\'
-  this._subcomponent = options.subcomponent || '&'
-  this._segment = options.segment || '\r'
+  this.field = options.field || '|'
+  this.component = options.component || '^'
+  this.fieldRepetition = options.fieldRepetition || '~'
+  this.escape = options.escape || '\\'
+  this.subcomponent = options.subcomponent || '&'
+  this.segment = options.segment || '\r'
   if (options.hl7) {
     this.parse(options.hl7)
   }
-
-  Object.defineProperty(this, 'segment', {
-    get: () => this._segment,
-    set: (value) => {
-      this._segment = value
-    },
-    configurable: false,
-    enumerable: true
-  })
-  Object.defineProperty(this, 'field', {
-    get: () => this._field,
-    set: (value) => {
-      this._field = value
-    },
-    configurable: false,
-    enumerable: true
-  })
-  Object.defineProperty(this, 'component', {
-    get: () => this._component,
-    set: (value) => {
-      this._component = value
-    },
-    configurable: false,
-    enumerable: true
-  })
-  Object.defineProperty(this, 'fieldRepetition', {
-    get: () => this._fieldRepetition,
-    set: (value) => {
-      this._fieldRepetition = value
-    },
-    configurable: false,
-    enumerable: true
-  })
-  Object.defineProperty(this, 'escape', {
-    get: () => this._escape,
-    set: (value) => {
-      this._escape = value
-    },
-    configurable: false,
-    enumerable: true
-  })
-  Object.defineProperty(this, 'subcomponent', {
-    get: () => this._subcomponent,
-    set: (value) => {
-      this._subcomponent = value
-    },
-    configurable: false,
-    enumerable: true
-  })
-
-}
-
-Encoding.prototype.encode = function (val) {
-  let [field, component, fieldRepetition, escape, subcomponent,/*segment*/] = this.toJSON()
-  let encoding = [field, component, fieldRepetition, escape, subcomponent]
-  return val.split('').map(char => encoding.indexOf(char) > -1 ? [escape, char].join('') : char).join('')
-}
-
-Encoding.prototype.decode = function (val) {
-  let escaped = false
-  return val.split('').reduce((decoded, char) => {
-    if (!escaped && char !== this.escape) {
-      return decoded + char
-    }
-    escaped = char === this.escape
-    return (escaped) ? decoded : decoded + char
-  }, '')
 }
 
 /**
@@ -105,7 +50,7 @@ Encoding.prototype.fromJSON = function (json) {
  * @return {string}
  */
 Encoding.prototype.toString = function () {
-  let {field, component, fieldRepetition, escape, subcomponent,/*segment*/} = this
+  let {field, component, fieldRepetition, escape, subcomponent} = this
   return [field, component, fieldRepetition, escape, subcomponent].join('')
 }
 
@@ -147,4 +92,7 @@ Encoding.fromJSON = (json) => {
   return new Encoding({field: field, component: component, fieldRepetition: fieldRepetition, escape: escape, subcomponent: subcomponent, segment: segment})
 }
 
-module.exports = Encoding
+if (typeof module !== 'undefined') {
+  module.exports = Encoding
+}
+

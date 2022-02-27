@@ -1,4 +1,8 @@
-const Encoding = require('./Encoding.es5')
+// noinspection ES6ConvertVarToLetConst
+
+if (typeof require !== 'undefined') {
+  var Encoding = require('./Encoding.es5')
+}
 
 const assert = (predicate, msg) => {
   if (predicate) {
@@ -20,17 +24,17 @@ const checks = {
       return assert(predicate != null, '"' + key + '" cannot be undefined!')
     },
     isComponentValid: (value) => assert(
-      checks.isComponentValid(value),
-      'A component must be an object with properties keys that are integers > 0 and values that are primitive, found ' + JSON.stringify(value)
+        checks.isComponentValid(value),
+        'A component must be an object with properties keys that are integers > 0 and values that are primitive, found ' + JSON.stringify(value)
     ),
-    notUndefined: (predicate, key) => checks.notUndefined(predicate, key),
+    notUndefined: (predicate, key) => {
+      if (Array.isArray(predicate)) {
+        predicate.forEach((pred, i) => assert(predicate != null, '"' + key[i] + '" cannot be undefined!'))
+      }
+      return assert(predicate != null, '"' + key + '" cannot be undefined!')
+    },
   },
-  notUndefined: (predicate, key) => {
-    if (Array.isArray(predicate)) {
-      predicate.forEach((pred, i) => assert(predicate != null, '"' + key[i] + '" cannot be undefined!'))
-    }
-    return assert(predicate != null, '"' + key + '" cannot be undefined!')
-  },
+
   isEmptyObj: (obj) => typeof obj === 'object' ? Object.keys(obj).length === 0 : false,
   isPositiveInteger: (n) => parseInt(n) > 0 && parseInt(n).toString() === n.toString(),
   isStrNum: (value) => ['string', 'number'].indexOf(typeof value) > -1,
@@ -45,56 +49,6 @@ const checks = {
       return ['string', 'number'].indexOf(type) > -1 && checks.isPositiveInteger(k)
     })
   },
-}
-
-/**
- * HL7 Parser
- * @private
- * @param hl7
- * @param encoding
- * @return {[*,(*|Encoding)]}
- */
-const hl7parser = (hl7, encoding) => {
-  if (!hl7.indexOf('MSH') === 0) {
-    throw new Error('Invalid Message! Message must start with "MSH"')
-  }
-  encoding = encoding || new Encoding(({hl7: hl7}))
-
-  const {field, component, fieldRepetition, escape, subcomponent} = encoding
-  const reducer = (acc, val, i) => void (acc[i + 1] = val) || acc
-  const parseComp = (comp, incEmpty) => comp.split(subcomponent).reduce((acc, comp, i) => reducer(acc, comp, i, incEmpty), {})
-  const parseField = (field, incEmpty) => field.split(component).reduce((acc, comp, i) => reducer(acc, parseComp(comp, incEmpty), i), {})
-
-  const parseFields = (fields, name, mod) => {
-    name = name || ''
-    mod = mod || 0
-    return fields.reduce((acc, fieldRep, fieldIndex, fieldArr) => {
-      const incEmpty = fieldArr.length - 1 === fieldIndex
-      let value = fieldRep.split(fieldRepetition).reduce((acc, field, i) => reducer(acc, parseField(field, incEmpty), i), {})
-      if (!checks.isEmptyObj(value)) {
-        acc[fieldIndex + 1 + mod] = value
-      }
-      return acc
-    }, {0: name})
-  }
-
-  const parseSegment = (hl7) => {
-    if (hl7.indexOf('MSH') === 0) {
-      // const [name, , ...fields] = hl7.split(field)
-      var fields = hl7.split(field)
-      var name = fields.shift()
-      fields.shift()
-      const _fields = parseFields(fields, name, 2)
-      _fields[1] = {1: {1: {1: field}}}
-      _fields[2] = {1: {1: {1: [component, fieldRepetition, escape, subcomponent].join('')}}}
-      return _fields
-    }
-    // const [name, ...fields] = hl7.split(field)
-    var fields = hl7.split(field)
-    var name = fields.shift()
-    return parseFields(fields, name)
-  }
-  return [hl7.split(encoding.segment).map((hl7) => parseSegment(hl7)), encoding]
 }
 
 /**
@@ -119,6 +73,7 @@ function HL7Message(hl7) {
   Object.defineProperty(this, 'segments', {get: () => this._segments, configurable: false, enumerable: true})
 
   this._segments = []
+  // eslint-disable-next-line block-scoped-var
   this._encoding = new Encoding()
   if (hl7) {
     this.parse(hl7)
@@ -128,14 +83,68 @@ function HL7Message(hl7) {
 }
 
 /**
+ * HL7 Parser
+ * @param {string|XML} [hl7]
+ * @param {Encoding} [encoding]
+ * @return {[]}
+ */
+HL7Message.parser = function (hl7, encoding) {
+  // Check for Mirth XML object
+  // check if we are in Mirth/Rhino environment and hl7 is instance of XML if so convert
+  if (typeof XML !== 'undefined') {
+    if (hl7 instanceof XML) {
+      hl7 = String(SerializerFactory.getSerializer('HL7V2').fromXML(hl7))
+    }
+  }
+
+  if (hl7.indexOf('MSH') !== 0) {
+    throw new Error('Invalid Message! Message must start with "MSH"')
+  }
+  // eslint-disable-next-line block-scoped-var
+  encoding = encoding || new Encoding(({hl7: hl7}))
+
+  const {field, component, fieldRepetition, escape, subcomponent} = encoding
+  const reducer = (acc, val, i) => void (acc[i + 1] = val) || acc
+  const parseComp = (comp, incEmpty) => comp.split(subcomponent).reduce((acc, comp, i) => reducer(acc, comp, i, incEmpty), {})
+  const parseField = (field, incEmpty) => field.split(component).reduce((acc, comp, i) => reducer(acc, parseComp(comp, incEmpty), i), {})
+  const parseFields = (fields, name, mod) => {
+    return fields.reduce((acc, fieldRep, fieldIndex, fieldArr) => {
+      const incEmpty = fieldArr.length - 1 === fieldIndex
+      let value = fieldRep.split(fieldRepetition).reduce((acc, field, i) => reducer(acc, parseField(field, incEmpty), i), {})
+      if (!checks.isEmptyObj(value)) {
+        acc[fieldIndex + 1 + (mod || 0)] = value
+      }
+      return acc
+    }, {0: name || ''})
+  }
+
+  const parseSegment = (hl7) => {
+    var fields, name
+    if (hl7.indexOf('MSH') === 0) {
+      fields = hl7.split(field)
+      name = fields.shift()
+      fields.shift()
+      const _fields = parseFields(fields, name, 2)
+      _fields[1] = {1: {1: {1: field}}}
+      _fields[2] = {1: {1: {1: [component, fieldRepetition, escape, subcomponent].join('')}}}
+      return _fields
+    }
+    fields = hl7.split(field)
+    name = fields.shift()
+    return parseFields(fields, name)
+  }
+  return [hl7.split(encoding.segment).map((hl7) => parseSegment(hl7)), encoding]
+}
+
+/**
  * Transforms a HL7 path string into an object.
- * @param path
- * @param autoResolve
- * @return {{path: string, comp: (string|undefined), sub: (string|undefined), fieldIdx: (string|undefined), seg: string, segIdx: (string|undefined), field: (string|undefined)}|boolean}
+ * @param {string} path
+ * @param {boolean} [autoResolve=false]
+ * @return ([seg: string, segIdx: number, field: string, fieldIdx: string, comp: string, sub: string, autoResolve: boolean]|false)
  * @private
  */
 HL7Message.prototype._hl7KeyParser = function (path, autoResolve) {
-  autoResolve = typeof autoResolve === 'boolean' ? autoResolve : true
+  autoResolve = autoResolve == null ? true : autoResolve
   checks.assert.isString(path, 'path')
   if (!path.trim()) {
     return false
@@ -151,9 +160,10 @@ HL7Message.prototype._hl7KeyParser = function (path, autoResolve) {
   if (autoResolve) {
     segIdx = (seg) ? segIdx || '1' : segIdx
     fieldIdx = (seg && field) ? fieldIdx || '1' : fieldIdx
+    comp = (seg && field && fieldIdx) ? comp || '1' : comp
     sub = (seg && field && comp) ? sub || '1' : sub
   }
-  return {path: path, seg: seg, segIdx: segIdx && parseInt(segIdx), field: field, fieldIdx: fieldIdx, comp: comp, sub: sub, autoResolve: autoResolve}
+  return [seg, segIdx && parseInt(segIdx), field, fieldIdx, comp, sub, autoResolve]
 }
 
 /**
@@ -164,9 +174,9 @@ HL7Message.prototype._hl7KeyParser = function (path, autoResolve) {
  * @return {(string|object|undefined)}
  */
 HL7Message.prototype.get = function (path, autoResolve) {
-  autoResolve = typeof autoResolve === 'boolean' ? autoResolve : true
-  let key = this._hl7KeyParser(path, autoResolve)
-  return key ? this._getRef(key) : undefined
+  autoResolve = autoResolve == null ? true : autoResolve
+  // return this._getRef(this._hl7KeyParser(path, typeof autoResolve === 'boolean' ? autoResolve : true), false)
+  return this._getRef(this._hl7KeyParser(path, autoResolve), false)
 }
 
 /**
@@ -185,7 +195,12 @@ HL7Message.prototype.getRange = function (path, start, stop, autoResolve) {
   const out = []
   for (let i = start; i <= stop; i++) {
     let key = this._hl7KeyParser(path.replace('%', i.toString()), autoResolve)
-    out.push(key ? this._getRef(key) || '' : '')
+    let [seg, segIdx, field, fieldIdx, comp, sub] = key
+    if (key) {
+      out.push(this._getRef([seg, segIdx, field, fieldIdx, comp])[sub] || '')
+    } else {
+      out.push('')
+    }
   }
   return out
 }
@@ -199,30 +214,32 @@ HL7Message.prototype.getRange = function (path, start, stop, autoResolve) {
  */
 HL7Message.prototype.set = function (path, value, autoResolve) {
   autoResolve = typeof autoResolve === 'boolean' ? autoResolve : false
-  let key = this._hl7KeyParser(path, autoResolve)
+  value = value || ''
+  const key = this._hl7KeyParser(path, autoResolve)
   if (!key) {
     return
   }
+  let [seg, segIdx, field, fieldIdx, comp, sub] = key
   // convert an array value to an object with keys i + 1
   if (Array.isArray(value)) {
     value = arrayToElement(value)
   }
-  const {seg, segIdx, field, fieldIdx, comp, sub} = key
+  // const {seg, segIdx, field, fieldIdx, comp, sub} = key
   // what do they want? segment, field, component, subcomponent
-  if (key.sub) {
+  if (sub) {
     return this._setSubcomponent(seg, segIdx, field, fieldIdx, comp, sub, value)
   }
-  if (key.comp) {
+  if (comp) {
     return this._setComponent(seg, segIdx, field, fieldIdx, comp, value)
   }
-  if (key.fieldIdx) {
+  if (fieldIdx) {
     return this._setField(seg, segIdx, field, fieldIdx, value)
   }
-  if (key.field) {
+  if (field) {
     return this._setFields(seg, segIdx, field, value)
   }
-  if (key.seg) {
-    return this._setSegment(key, value)
+  if (seg) {
+    return this._setSegment(seg, segIdx, value)
   }
 }
 /**
@@ -230,80 +247,85 @@ HL7Message.prototype.set = function (path, value, autoResolve) {
  * @todo
  * @param path
  */
-HL7Message.prototype.delete = function (path, autoResolve) {
-  autoResolve = typeof autoResolve === 'boolean' ? autoResolve : false
-  let key = this._hl7KeyParser(path, autoResolve)
-  const {seg, segIdx, field, fieldIdx, comp, autoCreate} = key
+HL7Message.prototype.delete = function (path) {
+  let key = this._hl7KeyParser(path)
   if (!key) {
     return
   }
+  const [seg, segIdx, field, fieldIdx, comp, sub] = key
 
-  // what do they want? segment, field, component, subcomponent
-  if (key.sub) {
-    if (this._getRefComponent(seg, segIdx, field, fieldIdx, comp, autoCreate)) {
-      delete this._getRefComponent(seg, segIdx, field, fieldIdx, comp, autoCreate)[key.sub]
-    }
-  } else if (key.comp) {
-    if (this._getRefFields(seg, segIdx, field)) {
-      delete this._getRefFields(seg, segIdx, field)[key.comp]
-    }
+  // what do they want to delete? segment, field, component, subcomponent
+  if (sub && this._getRef([seg, segIdx, field, fieldIdx, comp, sub])) {
+    delete this._getRef([seg, segIdx, field, fieldIdx, comp])[sub]
+  } else if (comp && !sub && this._getRef([seg, segIdx, field, fieldIdx, comp])) {
+    delete this._getRef([seg, segIdx, field, fieldIdx])[comp]
   }
-  if (key.fieldIdx) {
-    if (this._getRefField(seg, segIdx, field, fieldIdx)) {
-      delete this._getRefField(seg, segIdx, field, fieldIdx)[key.fieldIdx]
-    }
+  if (fieldIdx && !comp && this._getRef([seg, segIdx, field, fieldIdx])) {
+    delete this._getRef([seg, segIdx, field])[fieldIdx]
   }
-  if (key.field) {
-    if (this._getRefSegment(seg, segIdx)) {
-      delete this._getRefSegment(seg, segIdx)[key.field]
-    }
+  if (field && !fieldIdx && this._getRef([seg, segIdx, field])) {
+    delete this._getRef([seg, segIdx])[field]
   }
-  if (key.seg) {
+  if (seg) {
     throw new Error('TODO!')
   }
 }
 /**
  * Get a reference to an element
  * @private
- * @param {Object} key
- * @param {string} key.seg
- * @param {string} key.segIdx
- * @param {string} key.field
- * @param {string} key.fieldIdx
- * @param {string} key.comp
- * @param {string} key.sub
- * @param {boolean} key.autoCreate
+ * @param {[seg: string, segIdx: number, field: string, fieldIdx: string, comp: string, sub: string]=} key
+ * @param {boolean} [autoCreate=true]
  * @return {*}
  */
-HL7Message.prototype._getRef = function (key) {
-  const {seg, segIdx, field, fieldIdx, comp, sub, autoCreate} = key
-  checks.notUndefined([seg, segIdx], ['seg', 'segIdx'])
+HL7Message.prototype._getRef = function (key, autoCreate) {
+  if (!key) {
+    return
+  }
+  autoCreate = typeof autoCreate === 'boolean' ? autoCreate : true
+  var [seg, segIdx, field, fieldIdx, comp, sub] = key
+  segIdx = segIdx == null ? 1 : segIdx
+  if (autoCreate) {
+    fieldIdx = fieldIdx == null ? 1 : fieldIdx
+  }
 
   let segment = this.getSegment(seg, segIdx)
+  // segment
   if (!segment && autoCreate) {
     this._segments.push({'0': seg})
     segment = this.getSegment(seg, segIdx)
   }
   if (!segment || field == null) {
-    return segment
+    return segment || ''
   }
+
+  // field
   if (!segment[field] && autoCreate) {
     segment[field] = {}
   }
   if (!segment[field] || fieldIdx == null) {
+    // if (!segment[field]) {
     return segment[field]
   }
+
+  // fieldIdx
   if (!segment[field][fieldIdx] && autoCreate) {
     segment[field][fieldIdx] = {}
   }
   if (!segment[field][fieldIdx] || comp == null) {
     return segment[field][fieldIdx]
   }
+
+  // comp
   if (!segment[field][fieldIdx][comp] && autoCreate) {
     segment[field][fieldIdx][comp] = {}
   }
   if (!segment[field][fieldIdx][comp] || sub == null) {
     return segment[field][fieldIdx][comp]
+  }
+
+  // sub comp
+  if (!segment[field][fieldIdx][comp][sub] && autoCreate) {
+    segment[field][fieldIdx][comp][sub] = ''
   }
   return segment[field][fieldIdx][comp][sub]
 }
@@ -333,8 +355,8 @@ HL7Message.prototype._getSegmentIndex = function (seg, segIdx) {
  * @return {*[]}
  */
 HL7Message.prototype.getSegments = function (seg) {
-  checks.notUndefined([seg], ['seg'])
-  return this.segments.filter(segment => segment[0] === 'seg')
+  checks.assert.notUndefined([seg], ['seg'])
+  return this.segments.filter(segment => segment[0] === seg)
 }
 /**
  * Returns a specific segment by seg and segIdx
@@ -347,79 +369,60 @@ HL7Message.prototype.getSegments = function (seg) {
  */
 HL7Message.prototype.getSegment = function (seg, segIdx) {
   segIdx = segIdx || 1
-  checks.notUndefined([seg, segIdx], ['seg', 'segIdx'])
+  checks.assert.notUndefined([seg, segIdx], ['seg', 'segIdx'])
   const segmentIndex = this._getSegmentIndex(seg, segIdx)
   return this.segments[segmentIndex]
 }
-HL7Message.prototype._getRefSegment = function (seg, segIdx, autoCreate) {
-  autoCreate = typeof autoCreate === 'boolean' ? autoCreate : true
-  let segment = this.getSegment(seg, segIdx)
-  if (!segment && autoCreate) {
-    this._segments.push({'0': seg})
-    segment = this.getSegment(seg, segIdx)
-  }
-  return segment
-}
-HL7Message.prototype._getRefFields = function (seg, segIdx, field, autoCreate) {
-  autoCreate = typeof autoCreate === 'boolean' ? autoCreate : true
-  let ref = this._getRefSegment(seg, segIdx)
-  if (autoCreate && !ref[field]) {
-    ref[field] = {}
-  }
-  return ref[field]
-}
-HL7Message.prototype._getRefField = function (seg, segIdx, field, fieldIdx, autoCreate) {
-  autoCreate = typeof autoCreate === 'boolean' ? autoCreate : true
-  let ref = this._getRefFields(seg, segIdx, field)
-  if (autoCreate && !ref[fieldIdx]) {
-    ref[fieldIdx] = {}
-  }
-  return ref[fieldIdx]
-}
-HL7Message.prototype._getRefComponent = function (seg, segIdx, field, fieldIdx, comp, autoCreate) {
-  autoCreate = typeof autoCreate === 'boolean' ? autoCreate : true
-  let ref = this._getRefField(seg, segIdx, field, fieldIdx)
-  if (autoCreate && !ref[comp]) {
-    ref[comp] = {}
-  }
-  return ref[comp]
-}
-HL7Message.prototype._setSegment = function (key, value) {
-  key.segIdx = key.segIdx || 1
-  const {seg, segIdx} = key
+
+HL7Message.prototype._setSegment = function (seg, segIdx, value) {
+  segIdx = segIdx || 1
   value = arrayToElement(value)
-  checks.notUndefined([seg, segIdx], ['seg', 'segIdx'])
   value = checks.isStrNum(value) ? {1: value} : value
   Object.keys(value).forEach((field) => this._setFields(seg, segIdx, field, value[field]))
 }
 HL7Message.prototype._setFields = function (seg, segIdx, field, value) {
   segIdx = segIdx || 1
-  checks.assert.isNotUndefinedOrNull(value, 'value')
   value = arrayToElement(value)
-  // checks.assert.notUndefined([seg, segIdx, field], ['seg', 'segIdx', 'field'])
   value = checks.isStrNum(value) ? {1: value} : value
-  Object.keys(value).forEach((fieldIdx) => this._setField(seg, segIdx, field, fieldIdx, value[fieldIdx]))
+  Object.keys(value).forEach((key) => {
+    var _value = value[key]
+    if (typeof _value === 'string' || typeof _value === 'number') {
+      return this._setComponent(seg, segIdx, field, 1, key, _value)
+    }
+    this._setField(seg, segIdx, field, key, _value)
+  })
 }
 HL7Message.prototype._setField = function (seg, segIdx, field, fieldIdx, value) {
   segIdx = segIdx || 1
   fieldIdx = fieldIdx || 1
   value = arrayToElement(value)
-  checks.notUndefined([seg, segIdx, field, fieldIdx], ['seg', 'segIdx', 'field', 'fieldIdx'])
   value = checks.isStrNum(value) ? {1: value} : value
   Object.keys(value).forEach((comp) => this._setComponent(seg, segIdx, field, fieldIdx, comp, value[comp]))
 }
 HL7Message.prototype._setComponent = function (seg, segIdx, field, fieldIdx, comp, value) {
-  checks.assert.notUndefined([seg, segIdx, field, fieldIdx, comp], ['seg', 'segIdx', 'field', 'fieldIdx', 'comp'])
   value = arrayToElement(value)
   value = checks.isStrNum(value) ? {1: value} : value
-  checks.assert.isComponentValid(value)
+  if (!checks.isComponentValid(value)) {
+    throw new Error(['Failed to set ', seg, '[', segIdx, '].', field, '[', fieldIdx, '].', comp, ' expected Component got ', JSON.stringify(value)].join(''))
+  }
   Object.keys(value).forEach((sub) => this._setSubcomponent(seg, segIdx, field, fieldIdx, comp, sub, value[sub]))
 }
+/**
+ *
+ * @param {string} seg
+ * @param {number} segIdx
+ * @param {string} field
+ * @param {number} fieldIdx
+ * @param {string} comp
+ * @param {string} sub
+ * @param {(string|number)} value
+ * @private
+ */
 HL7Message.prototype._setSubcomponent = function (seg, segIdx, field, fieldIdx, comp, sub, value) {
-  checks.notUndefined([seg, segIdx, field, fieldIdx, comp, sub], ['seg', 'segIdx', 'field', 'fieldIdx', 'comp', 'sub'])
+  value = value || ''
   checks.assert.isStrNum(value, 'value')
   // A subcomponent value should be primitive
-  this._getRefComponent(seg, segIdx, field, fieldIdx, comp, sub, true)[sub] = value
+  this._getRef([seg, segIdx, field, fieldIdx, comp], true)[sub] = value
 }
 
 /**
@@ -447,21 +450,34 @@ HL7Message.prototype.toString = function () {
   const reduceComponents = (comp) => reducer(comp, subcomponent)
   const reduceField = (field) => reducer(field, component, reduceComponents)
   const reduceFields = (fields) => reducer(fields, fieldRepetition, reduceField)
-
-  return this.segments.map((segment) => Object.keys(segment)
-    .reduce((acc, idxFields, i, arr) => {
-      var fields = segment[idxFields]
-      // this is to fix the duplicate field separator on the MSH segment
-      if (segment[0] === 'MSH' && i > 1) {
-        idxFields--
-      }
-      // handle segment name
-      acc[idxFields] = (idxFields === '0') ? fields : reduceFields(fields)
-      return acc
-    }, [])
-    .join(field)
-  ).join(segment)
+  const reduceSegment = (segment) => (acc, idxFields, i) => {
+    var fields = segment[idxFields]
+    // this is to fix the duplicate field separator on the MSH segment
+    if (segment[0] === 'MSH' && i > 1) {
+      idxFields--
+    }
+    // handle segment name
+    acc[idxFields] = (idxFields === '0') ? fields : reduceFields(fields)
+    return acc
+  }
+  return this.segments.map((seg) => Object.keys(seg).reduce(reduceSegment(seg), []).join(field)).join(segment)
 }
+
+/**
+ * Returns the HL7 as Mirth XML
+ * @return {XML}
+ */
+HL7Message.prototype.toXML = function () {
+  // check if we are in Mirth/Rhino environment
+  if (typeof XML === 'undefined') {
+    throw new Error('XML type not detected! HL7Message.toXML is only valid in Mirth environment')
+  }
+  if (typeof SerializerFactory === 'undefined') {
+    throw new Error('SerializerFactory not detected! HL7Message.toXML is only valid in Mirth environment')
+  }
+  return new XML(SerializerFactory.getSerializer('HL7V2').toXML(this.toString()))
+}
+
 /**
  * The valueOf() method returns the primitive value of the HL7Message object.
  * @return {any}
@@ -475,7 +491,7 @@ HL7Message.prototype.valueOf = function () {
  * @param {string} hl7
  */
 HL7Message.prototype.parse = function (hl7) {
-  const [segments, encoding] = hl7parser(hl7)
+  const [segments, encoding] = HL7Message.parser(hl7)
   this._encoding = encoding
   this._segments = segments
   Object.defineProperty(this, 'raw', {get: () => hl7, configurable: true})
@@ -502,18 +518,20 @@ HL7Message.prototype.createAckMessage = function () {
   ack.set('MSH.4.1', this.get('MSH.6.1'))
   ack.set('MSH.5.1', this.get('MSH.3.1'))
   ack.set('MSH.6.1', this.get('MSH.4.1'))
-  ack.set('MSH.7.1', dt)
+  ack.set('MSH.7.1', dt + '.100')
   ack.set('MSH.9.1', 'ACK')
-  ack.set('MSH.10.1', ['ACK', dt].join(''))
+  // ack.set('MSH.10.1', ['ACK', dt].join(''))
+  ack.set('MSH.10.1', dt + '.100')
   ack.set('MSH.11.1', 'P')
   ack.set('MSH.12.1', this.get('MSH.12.1'))
   ack.set('MSA.1.1', 'AA')
-  ack.set('MSA.1.1', 'AA')
-  ack.set('MSA.1.2', this.get('MSH.10.1'))
+  ack.set('MSA.2.1', this.get('MSH.10.1'))
   return ack
 }
 
+if (typeof module !== 'undefined') {
+  module.exports = HL7Message
+}
 
-module.exports = HL7Message
 
-
+/* global XML, SerializerFactory */
