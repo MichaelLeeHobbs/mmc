@@ -3,7 +3,7 @@
  * Check if $t is already defined. If not then define it.
  */
 if (typeof $t === 'undefined') {
-  const $t = (cb) => {
+  function $t(cb) {
     try {
       return cb()
     } catch (ignore) {
