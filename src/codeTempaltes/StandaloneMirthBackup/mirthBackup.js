@@ -33,15 +33,24 @@
  * @licence Apache License 2.0
  */
 function mirthBackup(keepDaily) {
+    const now = new Date()
+    const getDayOfYear = ()=> Math.floor((Date.now() - Date.parse(new Date().getFullYear(), 0, 0)) / 86400000)
+    const getWeekNumber = () => {
+        const oneJan = new Date(now.getFullYear(), 0, 1)
+        const numberOfDays = Math.floor((now - oneJan) / (24 * 60 * 60 * 1000))
+        return Math.ceil((now.getDay() + 1 + numberOfDays) / 7)
+    }
+
     const newBackupData = {
         hour: (new Date()).getHours(),
-        daily: keepDaily ? getDayOfYear() : getDayName(),
+        daily: keepDaily ? getDayOfYear() : ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'][now.getDay()],
         week: getWeekNumber(),
-        month: getMonthName(),
+        month: ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'][now.getMonth()],
     }
     const backupData = $gc('backupData') || {hour: null, daily: null, week: null, month: null}
 
     const [config, backupDT] = getMirthConfig()
+    // eslint-disable-next-line no-global-assign,no-undef
     msg = config
     $c('backupFileName', String(backupDT).replace(/[:-]/g, '').replace(' ', 'T') + '.backup.xml')
 
@@ -70,9 +79,11 @@ function mirthBackup(keepDaily) {
     }
 
     $gc('backupData', newBackupData)
+    return msg
 }
 
 if (typeof module === 'object') {
     module.exports = mirthBackup
 }
 
+/* global $gc, $c, destinationSet, utils, getMirthConfig */

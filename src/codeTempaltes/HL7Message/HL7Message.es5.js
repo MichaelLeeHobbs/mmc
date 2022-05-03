@@ -376,12 +376,16 @@ HL7Message.prototype.getSegment = function (seg, segIdx) {
 
 HL7Message.prototype._setSegment = function (seg, segIdx, value) {
   segIdx = segIdx || 1
+  // changed on 4/30/2022 to fix TypeError: Cannot convert undefined to an object.
+  value = value || ''
   value = arrayToElement(value)
   value = checks.isStrNum(value) ? {1: value} : value
   Object.keys(value).forEach((field) => this._setFields(seg, segIdx, field, value[field]))
 }
 HL7Message.prototype._setFields = function (seg, segIdx, field, value) {
   segIdx = segIdx || 1
+  // changed on 4/30/2022 to fix TypeError: Cannot convert undefined to an object.
+  value = value || ''
   value = arrayToElement(value)
   value = checks.isStrNum(value) ? {1: value} : value
   Object.keys(value).forEach((key) => {
@@ -395,11 +399,15 @@ HL7Message.prototype._setFields = function (seg, segIdx, field, value) {
 HL7Message.prototype._setField = function (seg, segIdx, field, fieldIdx, value) {
   segIdx = segIdx || 1
   fieldIdx = fieldIdx || 1
+  // changed on 4/17/2022 to fix TypeError: Cannot convert undefined to an object.
+  value = value || ''
   value = arrayToElement(value)
   value = checks.isStrNum(value) ? {1: value} : value
   Object.keys(value).forEach((comp) => this._setComponent(seg, segIdx, field, fieldIdx, comp, value[comp]))
 }
 HL7Message.prototype._setComponent = function (seg, segIdx, field, fieldIdx, comp, value) {
+  // changed on 4/30/2022 to fix TypeError: Cannot convert undefined to an object.
+  value = value || ''
   value = arrayToElement(value)
   value = checks.isStrNum(value) ? {1: value} : value
   if (!checks.isComponentValid(value)) {
@@ -472,9 +480,9 @@ HL7Message.prototype.toXML = function () {
   if (typeof XML === 'undefined') {
     throw new Error('XML type not detected! HL7Message.toXML is only valid in Mirth environment')
   }
-  if (typeof SerializerFactory === 'undefined') {
-    throw new Error('SerializerFactory not detected! HL7Message.toXML is only valid in Mirth environment')
-  }
+  // if (typeof SerializerFactory === 'undefined') {
+  //   throw new Error('SerializerFactory not detected! HL7Message.toXML is only valid in Mirth environment')
+  // }
   return new XML(SerializerFactory.getSerializer('HL7V2').toXML(this.toString()))
 }
 

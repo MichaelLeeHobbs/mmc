@@ -11,7 +11,7 @@ function getMirthConfig() {
     const ControllerFactory = com.mirth.connect.server.controllers.ControllerFactory
     const configurationController = ControllerFactory.getFactory().createConfigurationController()
     const config = configurationController.getServerConfiguration()
-    const backupDate = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new JavaDate())
+    const backupDate = new SimpleDateFormat('yyyy-MM-dd HH:mm:ss').format(new JavaDate())
     config.setDate(backupDate)
     const serializer = ObjectXMLSerializer.getInstance()
     return [serializer.serialize(config), backupDate]
