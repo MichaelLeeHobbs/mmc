@@ -37,11 +37,6 @@ function DBConnection(config) {
     this._config.cacheName = this._config.cacheName || ['cachedConnection', channelName, this._config.name].join(':')
 }
 
-// utility functions
-function $sleep(ms) {
-    java.lang.Thread.sleep(ms)
-}
-
 /**
  * Closes the DB connection
  */
@@ -51,9 +46,10 @@ DBConnection.prototype.closeConnection = function () {
 
 /**
  * Executes a SQL statement
- * @param statement
- * @param isQuery
- * @param paramList - Java ArrayList or JS Array
+ * @param {string} statement
+ * @param {boolean} isQuery
+ * @param {[*]} paramList - Java ArrayList or JS Array
+ * @param {number} [_retry=0] - internal use only
  * @return {*|undefined} - results or undefined
  */
 DBConnection.prototype.executeDBStatement = function (statement, isQuery, paramList, _retry) {
@@ -152,4 +148,4 @@ DBConnection.prototype._getConnection = function (_retry) {
     return this._getConnection(_retry)
 }
 
-/* global globalMap, channelName, java, Packages, DatabaseConnectionFactory*/
+/* global globalMap, channelName, java, Packages, DatabaseConnectionFactory, $t, $sleep */
