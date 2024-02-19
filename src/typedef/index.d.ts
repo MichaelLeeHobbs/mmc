@@ -137,7 +137,7 @@ class JavaString extends JavaObject implements CharSequence {
     isEmpty(): JavaBoolean
 
     /** Returns a new String composed of copies of the CharSequence elements joined together with a copy of the specified delimiter. */
-    static join(delimiter: CharSequence, ...elements: CharSequence): JavaString
+    static join(delimiter: CharSequence, elements: CharSequence[]): JavaString
     /** Returns a new String composed of copies of the CharSequence elements joined together with a copy of the specified delimiter. */
     static join(delimiter: CharSequence, elements: JavaString[]): JavaString
 
@@ -285,10 +285,6 @@ class JavaFloat extends JavaObject {
 
 }
 
-class JavaObject extends JavaObject {
-
-}
-
 class JavaBoolean extends JavaObject {
 
 }
@@ -375,14 +371,14 @@ declare global {
     /** The response message. */
     var response: ImmutableResponse;
 
-    /** The response status. */
-    var responseStatus: any = response.getStatus();
+    /** The response status. response.getStatus() */
+    var responseStatus: any; // response.getStatus();
 
-    /** The response error message. */
-    var responseErrorMessage: any = response.getError();
+    /** The response error message. response.getError() */
+    var responseErrorMessage: any; // response.getError();
 
-    /** The response status message. */
-    var responseStatusMessage: any = response.getStatusMessage();
+    /** The response status message. response.getStatusMessage() */
+    var responseStatusMessage: any; // response.getStatusMessage();
 
 
     // TODO - what is this?
@@ -426,16 +422,14 @@ declare global {
     /** Get the key from the first map that contains it */
     function $(key: string | number, value?: any): any;
 
-    var logger: {}
-
     var SMTPConnectionFactory: any;
-    var DatabaseConnectionFactory: DatabaseConnectionFactory = new DatabaseConnectionFactory();
+    var DatabaseConnectionFactory: DatabaseConnectionFactory; // = new DatabaseConnectionFactory();
     var executeCachedQuery: any;
     var createDatabaseConnection: any;
     var createSMTPConnection: any;
     var executeUpdate: any;
     var SerializerFactory: any;
-    var alerts: AlertSender = new AlertSender(channelId);
+    var alerts: AlertSender; // = new AlertSender(channelId);
 
     /** The current channel ID. */
     var channelId: string;
@@ -443,9 +437,9 @@ declare global {
     /** The current channel name. */
     var channelName: string;
 
-    var replacer: TemplateValueReplacer = new TemplateValueReplacer();
+    var replacer: TemplateValueReplacer; // = new TemplateValueReplacer();
 
-    var contextFactory: ContextFactory = new ContextFactory();
+    var contextFactory: ContextFactory; // = new ContextFactory();
     var FileUtil: {}
     var DateUtil: {}
 
@@ -487,7 +481,8 @@ declare global {
     /** Helper function to create a new Number but leave undefined/null values alone */
     function newNumberOrUndefined(value): Number | undefined | null;
 
-    var router: VMRouter = new VMRouter();
+    /** An instance of the VMRouter class. new VMRouter() */
+    var router: VMRouter; // new VMRouter();
 
 
     /** Mirth Connect Connector Message */
@@ -495,7 +490,7 @@ declare global {
         /** Returns the ID of the channel associated with this connector message. */
         getChannelId(): String;
         /** Returns the channel map. */
-        getChannelMap(): Map<String, Object>;
+        getChannelMap(): JavaMap<String, Object>;
         /** Returns the Name of the channel associated with this connector message. */
         getChannelName(): String;
         /** Returns the message ID of the message. */
@@ -722,7 +717,7 @@ declare global {
                             /** Removes references to any data (textual or binary) currently stored by the raw message. */
                             clearMessage(): void;
                             /** Deprecated. This method is deprecated and will soon be removed. Please use getSourceMap() instead. */
-                            getChannelMap(): Map<JavaString, JavaObject>;
+                            getChannelMap(): JavaMap<JavaString, JavaObject>;
                             /** Returns the collection of integers (metadata IDs) representing which destinations to dispatch the message to. */
                             getDestinationMetaDataIds(): Collection<JavaInteger>;
                             /** Returns the collection of integers (metadata IDs) representing which destinations to dispatch the message to. */
@@ -732,13 +727,13 @@ declare global {
                             /** Returns the textual data to be dispatched to a channel. */
                             getRawData(): JavaString;
                             /** Returns the source map to be used at the beginning of the channel dispatch. */
-                            getSourceMap(): Map<JavaString, JavaObject>;
+                            getSourceMap(): JavaMap<JavaString, JavaObject>;
                             /** Deprecated. This method is deprecated and will soon be removed. Please use setSourceMap(sourceMap) instead. */
-                            setChannelMap(channelMap: Map<JavaString, JavaObject>): void;
+                            setChannelMap(channelMap: JavaMap<JavaString, JavaObject>): void;
                             /** Sets which destinations to dispatch the message to. */
                             setDestinationMetaDataIds(destinationMetaDataIds: Collection<Number>): void;
                             /** Sets the source map to be used at the beginning of the channel dispatch. */
-                            setSourceMap(sourceMap: Map<JavaString, JavaObject>): void;
+                            setSourceMap(sourceMap: JavaMap<JavaString, JavaObject>): void;
                         }
 
                         class ImmutableResponse {
