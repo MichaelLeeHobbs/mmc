@@ -51,25 +51,3 @@ function responseHandler(handlers) {
 
 /* global $, response, msg, responseStatus, SENT, QUEUED, ERROR, $c, $co, connectorMessage, responseErrorMessage */
 
-const vaHandler = (response, msg) => {
-  const data = {
-    status:  msg['MSA']['MSA.1']['MSA.1.1'].toString(),
-    statusText: msg['MSA']['MSA.3']['MSA.3.1'].toString(),
-    source: $('source'),
-    xServerID: $('xServerID'),
-    studyID: $('studyID'),
-    accessionNumber: $('accessionNumber'),
-    addendumNumber: $('addendumNumber'),
-  }
-  $c('result', JSON.stringify(data))
-  return {responseStatus: ERROR}
-}
-
-const handlers = [
-  {key: 'Duplicate Addendum', responseStatus: SENT},
-  {key: 'Invalid patient identifier', responseStatus: SENT},
-  {key: 'Report already on file', responseStatus: SENT},
-  {key: '', maxAttempts: 5, handler: vaHandler},
-]
-
-responseHandler(handlers)
