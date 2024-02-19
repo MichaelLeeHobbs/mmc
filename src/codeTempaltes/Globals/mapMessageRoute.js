@@ -2,14 +2,6 @@
  * Maps the route a message took getting to this channel is $c('route')
  * Designed to be placed in Global Scripts - Preprocessor Script
  * Has multiple levels of try/catch to avoid potential issues.
- *
- * @Author Michael L Hobbs
- * @History
- * 20220326 init
- *
- * @param {string} sql
- * @param [params]
- * @return {string}
  */
 try {
   // this is to avoid issues when used as a global script in mirth

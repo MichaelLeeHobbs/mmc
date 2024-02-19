@@ -1,7 +1,7 @@
 /**
  * Converts a Java ArrayList to a JS Array
- * @param arrayList
- * @return {[]}
+ * @param {List} arrayList
+ * @return {*[]}
  */
 function arrayListToArray(arrayList) {
   const arr = []

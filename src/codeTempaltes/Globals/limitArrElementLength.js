@@ -1,8 +1,8 @@
 /**
  * Iterates over an array limiting the length of each element to length splitting on space and length as needed
- * @param {(string)[]} arr
- * @param {number} length
- * @return {(string)[]}
+ * @param {(string)[]} arr - The array to iterate over
+ * @param {number} length - The length to limit the elements to
+ * @return {(string)[]} - The new array
  */
 function limitArrElementLength(arr, length) {
   const out = []

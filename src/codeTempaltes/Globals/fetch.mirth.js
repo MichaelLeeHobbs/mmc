@@ -36,6 +36,7 @@
  * @param {string} [options.method='GET'] GET/POST/PUT/DELETE
  * @param {object} [options.headers={}] Dictionary of request headers.
  * @param {string} [options.body] Request body
+ * @param {string} [options.redirect='follow'] If not follow redirects will be ignored
  * @param {boolean} [options.ignoreSSLError=false] If true will ignore all SSL errors. Useful for connecting to self-signed certs.
  * @return {FetchResponse}
  */
@@ -128,8 +129,27 @@ function fetch(url, options) {
     }
   }
 
+  FetchResponse.prototype.then = function (onFulfilled) {
+    if (typeof onFulfilled !== 'function') {
+      return this
+    }
+    try {
+      return onFulfilled(this)
+    } catch (e) {
+      return {
+        catch: function (onRejected) {
+          if (typeof onRejected !== 'function') {
+            return e
+          }
+          return onRejected(e)
+        }
+      }
+    }
+  }
+
   options = options || {}
   options.headers = options.headers || []
+  options.redirect = options.redirect || 'follow'
   if (typeof options.headers === 'object' && !Array.isArray(options.headers)) {
     options.headers = Object.keys(options.headers).map(key => [key, options.headers[key]])
   }
@@ -137,7 +157,7 @@ function fetch(url, options) {
   const {StringEntity} = Packages.org.apache.http.entity
   const {SSLContextBuilder, TrustStrategy} = Packages.org.apache.http.ssl
   const {SSLConnectionSocketFactory} = Packages.org.apache.http.conn.ssl
-  const {HttpClients, HttpClientBuilder} = Packages.org.apache.http.impl.client
+  const {HttpClients, HttpClientBuilder, LaxRedirectStrategy} = Packages.org.apache.http.impl.client
   const {HttpGet, HttpPut, HttpPost, HttpDelete, /* HttpOptions, HttpPatch, HttpTrace */} = Packages.org.apache.http.client.methods
 
   var httpClient
@@ -146,24 +166,41 @@ function fetch(url, options) {
     const trustStrategy = new JavaAdapter(TrustStrategy, {isTrusted: () => true})
     sslContextBuilder.loadTrustMaterial(null, trustStrategy)
     const sslConnectionSocketFactory = new SSLConnectionSocketFactory(sslContextBuilder.build(), SSLConnectionSocketFactory.ALLOW_ALL_HOSTNAME_VERIFIER)
-    httpClient = HttpClients.custom().setSSLSocketFactory(sslConnectionSocketFactory).build()
+    httpClient = HttpClients.custom()
+        .setSSLSocketFactory(sslConnectionSocketFactory)
+
+    if (options.redirect === 'follow') {
+      httpClient = httpClient.setRedirectStrategy(new LaxRedirectStrategy())
+    } else {
+      httpClient = httpClient.disableRedirectHandling()
+    }
+
+    httpClient = httpClient.build()
   } else {
-    httpClient = HttpClientBuilder.create().build()
+    httpClient = HttpClientBuilder.create()
+
+    if (options.redirect === 'follow') {
+      httpClient = httpClient.setRedirectStrategy(new LaxRedirectStrategy())
+    } else {
+      httpClient = httpClient.disableRedirectHandling()
+    }
+
+    httpClient = httpClient.build()
   }
 
   const method = options.method || 'GET'
 
   var httpConfig = undefined
-  if (method === 'GET') {
+  if (method.toUpperCase() === 'GET') {
     httpConfig = new HttpGet(url)
   }
-  if (method === 'PUT') {
+  if (method.toUpperCase() === 'PUT') {
     httpConfig = new HttpPut(url)
   }
-  if (method === 'POST') {
+  if (method.toUpperCase() === 'POST') {
     httpConfig = new HttpPost(url)
   }
-  if (method === 'DELETE') {
+  if (method.toUpperCase() === 'DELETE') {
     httpConfig = new HttpDelete(url)
   }
 
@@ -176,6 +213,7 @@ function fetch(url, options) {
   var rawResponse = httpClient.execute(httpConfig)
   const locationHeader = rawResponse.getLastHeader('Location')
   const response = {
+    // request: {url: url, options: options},
     status: parseInt(rawResponse.getStatusLine().getStatusCode()),
     statusText: String(rawResponse.getStatusLine().getReasonPhrase()),
     url: String(locationHeader ? locationHeader.getValue() : ''),
@@ -183,7 +221,11 @@ function fetch(url, options) {
     rawHeaders: [],
   }
   if (typeof Map === 'undefined') {
-    logger.warn('Fetch could not find type Map! Only rawHeaders will be available!')
+    try {
+      logger.warn('Fetch could not find type Map! Only rawHeaders will be available!')
+    } catch (e) {
+      // ignore
+    }
   } else {
     response.headers = new Map()
   }
