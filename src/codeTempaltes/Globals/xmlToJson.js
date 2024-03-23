@@ -13,10 +13,7 @@ function xmlToJson(xml, cb, _path) {
   }
 
   const out = {};
-  // use var, or it won't work right in mirth
-  // @formatter:off
   for each (var child in xml.children()) {
-    // @formatter:on
     var name = child.name().localName;
     var childPath = _path ? _path + '.' + name : name;
     var childValue = xmlToJson(child, cb, childPath);
