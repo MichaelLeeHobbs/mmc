@@ -6,29 +6,32 @@
  * @return {string|{}|[]}
  */
 function xmlToJson(xml, cb, _path) {
-  _path = _path || '';
-  if (!xml.hasComplexContent()) {
-    // Convert directly if there's no complex content.
-    return xml.toString();
-  }
-
-  const out = {};
-  for each (var child in xml.children()) {
-    var name = child.name().localName;
-    var childPath = _path ? _path + '.' + name : name;
-    var childValue = xmlToJson(child, cb, childPath);
-
-    if (typeof cb === 'function') {
-      childValue = cb(childPath, childValue);
+    _path = _path || '';
+    if (!xml.hasComplexContent()) {
+        // Convert directly if there's no complex content.
+        return xml.toString();
     }
 
-    // Handle multiple instances of the same element.
-    if (out.hasOwnProperty(name)) {
-      out[name].push(childValue);
-    } else {
-      out[name] = [childValue];
-    }
-  }
+    const out = {};
+    const children = xml.children()
+    for (var i = 0; i < children.length(); i++) {
+        var child = children[i]
+        // you can also get localName directly as a string
+        var name = child.localName()
+        var childPath = _path ? _path + '.' + name : name;
+        var childValue = xmlToJson(child, cb, childPath);
 
-  return out;
+        if (typeof cb === 'function') {
+            childValue = cb(childPath, childValue);
+        }
+
+        // Handle multiple instances of the same element.
+        if (out.hasOwnProperty(name)) {
+            out[name].push(childValue);
+        } else {
+            out[name] = [childValue];
+        }
+    }
+
+    return out;
 }
