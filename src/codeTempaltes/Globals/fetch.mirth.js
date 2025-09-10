@@ -167,7 +167,7 @@ function fetch(url, options) {
     sslContextBuilder.loadTrustMaterial(null, trustStrategy)
     const sslConnectionSocketFactory = new SSLConnectionSocketFactory(sslContextBuilder.build(), SSLConnectionSocketFactory.ALLOW_ALL_HOSTNAME_VERIFIER)
     httpClient = HttpClients.custom()
-        .setSSLSocketFactory(sslConnectionSocketFactory)
+      .setSSLSocketFactory(sslConnectionSocketFactory)
 
     if (options.redirect === 'follow') {
       httpClient = httpClient.setRedirectStrategy(new LaxRedirectStrategy())
@@ -206,11 +206,15 @@ function fetch(url, options) {
 
   options.headers.forEach(header => httpConfig.addHeader(header[0], header[1]))
 
+  if (method.toUpperCase() === 'GET' && options.body) {
+    throw new Error('GET requests cannot have a body!')
+  }
+
   if (httpConfig && options.body) {
     httpConfig.setEntity(new StringEntity(options.body))
   }
 
-  var rawResponse = httpClient.execute(httpConfig)
+  const rawResponse = httpClient.execute(httpConfig)
   const locationHeader = rawResponse.getLastHeader('Location')
   const response = {
     // request: {url: url, options: options},
@@ -221,11 +225,7 @@ function fetch(url, options) {
     rawHeaders: [],
   }
   if (typeof Map === 'undefined') {
-    try {
-      logger.warn('Fetch could not find type Map! Only rawHeaders will be available!')
-    } catch (e) {
-      // ignore
-    }
+    // logger.warn('Fetch could not find type Map! Only rawHeaders will be available!')
   } else {
     response.headers = new Map()
   }
@@ -245,4 +245,4 @@ function fetch(url, options) {
   return new FetchResponse(rawResponse.getEntity(), response)
 }
 
-/* global Packages, JavaAdapter, XML */
+/* exported fetch */
