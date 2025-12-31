@@ -3294,22 +3294,39 @@ declare global {
                             setSourceMap(sourceMap: java.util.Map<java.lang.String, java.lang.Object>): void;
                         }
 
-                        class ImmutableResponse {
-                            constructor(status: any, errorMessage: any, statusMessage: any);
+                        /**
+                         * This class represents a destination response and is used to retrieve details such as the response data, message status, and errors.
+                         */
+                        class ImmutableResponse extends java.lang.Object {
+                            /**
+                             * Instantiates a new ImmutableResponse object.
+                             * @param response - The Response object that this object will reference for retrieving data.
+                             */
+                            constructor(response: com.mirth.connect.userutil.Response);
 
-                            /** Returns the error string associated with this response, if it exists. */
-                            getError(): java.lang.String;
-
-                            /** Returns the actual response data, as a string. */
+                            /**
+                             * Returns the actual response data, as a string.
+                             * @returns The actual response data, as a string.
+                             */
                             getMessage(): java.lang.String;
 
-                            /** Returns the Status (e.g. */
+                            /**
+                             * Returns the Status (e.g. SENT, QUEUED) of this response, which will be used to set the status of the corresponding connector message.
+                             * @returns The Status (e.g. SENT, QUEUED) of this response.
+                             */
                             getNewMessageStatus(): com.mirth.connect.userutil.Status;
 
-                            /** Returns a brief message explaining the reason for the current status. */
-                            getStatusMessage(): java.lang.String;
+                            /**
+                             * Returns the error string associated with this response, if it exists.
+                             * @returns The error string associated with this response, if it exists.
+                             */
+                            getError(): java.lang.String;
 
-                            getStatus(): any;
+                            /**
+                             * Returns a brief message explaining the reason for the current status.
+                             * @returns A brief message explaining the reason for the current status.
+                             */
+                            getStatusMessage(): java.lang.String;
                         }
                     }
                 }
@@ -3387,6 +3404,18 @@ declare global {
                             /** Represents a message in the Donkey message model. */
                             class Message extends java.lang.Object {
                                 // Internal Donkey message model - typically accessed through ImmutableMessage
+                            }
+
+                            /** Represents message content in the Donkey message model. */
+                            class MessageContent extends java.lang.Object {
+                                // Internal Donkey message model - typically accessed through ImmutableMessageContent
+                            }
+
+                            namespace attachment {
+                                /** Represents an attachment in the Donkey message model. */
+                                class Attachment extends java.lang.Object {
+                                    // Internal Donkey message model - typically accessed through ImmutableAttachment
+                                }
                             }
                         }
                     }
