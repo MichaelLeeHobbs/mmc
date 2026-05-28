@@ -31,6 +31,12 @@
  * )
  * msg = response.json()
  *
+ * // Mutual TLS (mTLS) Example
+ * const response = fetch('https://secure.example.com/api',
+ *  {clientCert: {path: '/opt/mirth/certs/client.p12', password: 'changeit'}}
+ * )
+ * msg = response.json()
+ *
  * @param {string} url
  * @param {object} [options]
  * @param {string} [options.method='GET'] GET/POST/PUT/DELETE
@@ -38,6 +44,11 @@
  * @param {string} [options.body] Request body
  * @param {string} [options.redirect='follow'] If not follow redirects will be ignored
  * @param {boolean} [options.ignoreSSLError=false] If true will ignore all SSL errors. Useful for connecting to self-signed certs.
+ * @param {object} [options.clientCert] Client certificate for mutual TLS (mTLS). The keystore must contain both the client certificate and its private key.
+ * @param {string} options.clientCert.path Filesystem path (on the Mirth server) to the keystore file (PKCS12 .p12/.pfx or JKS .jks).
+ * @param {string} [options.clientCert.password] Password used to unlock the keystore.
+ * @param {string} [options.clientCert.keyPassword] Password for the private key, if different from the keystore password. Defaults to options.clientCert.password.
+ * @param {string} [options.clientCert.type] Keystore type, 'PKCS12' or 'JKS'. Auto-detected from the file extension (.jks => JKS, otherwise PKCS12) when omitted.
  * @return {FetchResponse}
  */
 function fetch(url, options) {
@@ -161,32 +172,57 @@ function fetch(url, options) {
     const {HttpGet, HttpPut, HttpPost, HttpDelete, /* HttpOptions, HttpPatch, HttpTrace */} = Packages.org.apache.http.client.methods
 
     var httpClient
-    if (options.ignoreSSLError) {
+    // A custom SSLContext is only required when presenting a client certificate (mTLS)
+    // and/or when bypassing server certificate validation (ignoreSSLError).
+    if (options.clientCert || options.ignoreSSLError) {
         const sslContextBuilder = new SSLContextBuilder()
-        const trustStrategy = new JavaAdapter(TrustStrategy, {isTrusted: () => true})
-        sslContextBuilder.loadTrustMaterial(null, trustStrategy)
-        const sslConnectionSocketFactory = new SSLConnectionSocketFactory(sslContextBuilder.build(), SSLConnectionSocketFactory.ALLOW_ALL_HOSTNAME_VERIFIER)
+
+        if (options.clientCert) {
+            const {KeyStore} = Packages.java.security
+            const {FileInputStream} = Packages.java.io
+
+            const certPath = String(options.clientCert.path)
+            // Auto-detect the keystore type from the file extension when not specified.
+            const certType = options.clientCert.type || (/\.jks$/i.test(certPath) ? 'JKS' : 'PKCS12')
+            // Rhino: convert JS strings to char[] for the KeyStore/SSL APIs.
+            const storePassword = options.clientCert.password != null ? new Packages.java.lang.String(options.clientCert.password).toCharArray() : null
+            const keyPasswordRaw = options.clientCert.keyPassword != null ? options.clientCert.keyPassword : options.clientCert.password
+            const keyPassword = keyPasswordRaw != null ? new Packages.java.lang.String(keyPasswordRaw).toCharArray() : null
+
+            const keyStore = KeyStore.getInstance(certType)
+            const certStream = new FileInputStream(certPath)
+            try {
+                keyStore.load(certStream, storePassword)
+            } finally {
+                certStream.close()
+            }
+            sslContextBuilder.loadKeyMaterial(keyStore, keyPassword)
+        }
+
+        if (options.ignoreSSLError) {
+            const trustStrategy = new JavaAdapter(TrustStrategy, {isTrusted: () => true})
+            sslContextBuilder.loadTrustMaterial(null, trustStrategy)
+        }
+
+        // Skip hostname verification only when SSL errors are explicitly ignored;
+        // mTLS on its own must still verify the server's hostname.
+        const hostnameVerifier = options.ignoreSSLError
+            ? SSLConnectionSocketFactory.ALLOW_ALL_HOSTNAME_VERIFIER
+            : SSLConnectionSocketFactory.getDefaultHostnameVerifier()
+        const sslConnectionSocketFactory = new SSLConnectionSocketFactory(sslContextBuilder.build(), hostnameVerifier)
         httpClient = HttpClients.custom()
             .setSSLSocketFactory(sslConnectionSocketFactory)
-
-        if (options.redirect === 'follow') {
-            httpClient = httpClient.setRedirectStrategy(new LaxRedirectStrategy())
-        } else {
-            httpClient = httpClient.disableRedirectHandling()
-        }
-
-        httpClient = httpClient.build()
     } else {
         httpClient = HttpClientBuilder.create()
-
-        if (options.redirect === 'follow') {
-            httpClient = httpClient.setRedirectStrategy(new LaxRedirectStrategy())
-        } else {
-            httpClient = httpClient.disableRedirectHandling()
-        }
-
-        httpClient = httpClient.build()
     }
+
+    if (options.redirect === 'follow') {
+        httpClient = httpClient.setRedirectStrategy(new LaxRedirectStrategy())
+    } else {
+        httpClient = httpClient.disableRedirectHandling()
+    }
+
+    httpClient = httpClient.build()
 
     const method = options.method || 'GET'
 
