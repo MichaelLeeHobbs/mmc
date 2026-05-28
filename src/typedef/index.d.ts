@@ -505,6 +505,72 @@ declare global {
                 /** Returns an estimate of the number of bytes that can be read. */
                 available(): int;
             }
+
+            /**
+             * This abstract class is the superclass of all classes representing an output stream of bytes.
+             */
+            abstract class OutputStream extends java.lang.Object {
+                /** Writes the specified byte to this output stream. */
+                write(b: int): void;
+
+                /** Writes b.length bytes from the specified byte array to this output stream. */
+                write(b: byte[]): void;
+
+                /** Writes len bytes from the specified byte array starting at offset off to this output stream. */
+                write(b: byte[], off: int, len: int): void;
+
+                /** Flushes this output stream and forces any buffered output bytes to be written out. */
+                flush(): void;
+
+                /** Closes this output stream and releases any system resources associated with this stream. */
+                close(): void;
+            }
+
+            /**
+             * Abstract class for reading character streams.
+             */
+            abstract class Reader extends java.lang.Object {
+                /** Reads a single character. */
+                read(): int;
+
+                /** Reads characters into an array. */
+                read(cbuf: java.lang.Character[]): int;
+
+                /** Reads characters into a portion of an array. */
+                read(cbuf: java.lang.Character[], off: int, len: int): int;
+
+                /** Tells whether this stream is ready to be read. */
+                ready(): boolean;
+
+                /** Closes the stream and releases any system resources associated with it. */
+                close(): void;
+            }
+
+            /**
+             * Abstract class for writing to character streams.
+             */
+            abstract class Writer extends java.lang.Object {
+                /** Writes a single character. */
+                write(c: int): void;
+
+                /** Writes an array of characters. */
+                write(cbuf: java.lang.Character[]): void;
+
+                /** Writes a portion of an array of characters. */
+                write(cbuf: java.lang.Character[], off: int, len: int): void;
+
+                /** Writes a string. */
+                write(str: java.lang.String): void;
+
+                /** Writes a portion of a string. */
+                write(str: java.lang.String, off: int, len: int): void;
+
+                /** Flushes the stream. */
+                flush(): void;
+
+                /** Closes the stream, flushing it first. */
+                close(): void;
+            }
         }
         namespace lang {
             /**
@@ -1169,6 +1235,101 @@ declare global {
             }
         }
 
+        namespace net {
+            /**
+             * Class URL represents a Uniform Resource Locator, a pointer to a "resource" on the World Wide Web.
+             */
+            class URL extends java.lang.Object implements java.io.Serializable {
+                /** Creates a URL object from the String representation. */
+                constructor(spec: java.lang.String);
+                /** Creates a URL object from the specified protocol, host, port number, and file. */
+                constructor(protocol: java.lang.String, host: java.lang.String, port: int, file: java.lang.String);
+                /** Creates a URL by parsing the given spec within a specified context. */
+                constructor(context: URL, spec: java.lang.String);
+
+                /** Gets the protocol name of this URL. */
+                getProtocol(): java.lang.String;
+                /** Gets the host name of this URL. */
+                getHost(): java.lang.String;
+                /** Gets the port number of this URL. */
+                getPort(): int;
+                /** Gets the default port number of the protocol associated with this URL. */
+                getDefaultPort(): int;
+                /** Gets the file name of this URL. */
+                getFile(): java.lang.String;
+                /** Gets the path part of this URL. */
+                getPath(): java.lang.String;
+                /** Gets the query part of this URL. */
+                getQuery(): java.lang.String;
+                /** Gets the anchor (also known as the "reference") of this URL. */
+                getRef(): java.lang.String;
+                /** Gets the authority part of this URL. */
+                getAuthority(): java.lang.String;
+                /** Gets the userInfo part of this URL. */
+                getUserInfo(): java.lang.String;
+                /** Constructs a string representation of this URL. */
+                toString(): string;
+                /** Constructs a string representation of this URL. */
+                toExternalForm(): java.lang.String;
+                /** Returns a URI equivalent to this URL. */
+                toURI(): URI;
+                /** Opens a connection to this URL. */
+                openConnection(): URLConnection;
+                /** Opens a stream to this URL. */
+                openStream(): java.io.InputStream;
+            }
+
+            /**
+             * Represents a Uniform Resource Identifier (URI) reference.
+             */
+            class URI extends java.lang.Object implements java.io.Serializable {
+                /** Constructs a URI by parsing the given string. */
+                constructor(str: java.lang.String);
+                /** Constructs a hierarchical URI from the given components. */
+                constructor(scheme: java.lang.String, userInfo: java.lang.String, host: java.lang.String, port: int, path: java.lang.String, query: java.lang.String, fragment: java.lang.String);
+
+                /** Returns the scheme component of this URI. */
+                getScheme(): java.lang.String;
+                /** Returns the host component of this URI. */
+                getHost(): java.lang.String;
+                /** Returns the port component of this URI. */
+                getPort(): int;
+                /** Returns the path component of this URI. */
+                getPath(): java.lang.String;
+                /** Returns the query component of this URI. */
+                getQuery(): java.lang.String;
+                /** Returns the fragment component of this URI. */
+                getFragment(): java.lang.String;
+                /** Returns the content of this URI as a string. */
+                toString(): string;
+                /** Constructs a URL from this URI. */
+                toURL(): URL;
+            }
+
+            /**
+             * The abstract class URLConnection is the superclass of all classes that
+             * represent a communications link between the application and a URL.
+             */
+            abstract class URLConnection extends java.lang.Object {
+                /** Returns the value of the content-type header field. */
+                getContentType(): java.lang.String;
+                /** Returns the value of the content-length header field. */
+                getContentLength(): int;
+                /** Returns the value of the content-encoding header field. */
+                getContentEncoding(): java.lang.String;
+                /** Returns an input stream that reads from this open connection. */
+                getInputStream(): java.io.InputStream;
+                /** Returns an output stream that writes to this connection. */
+                getOutputStream(): java.io.OutputStream;
+                /** Returns the value of the named header field. */
+                getHeaderField(name: java.lang.String): java.lang.String;
+                /** Sets the value of the specified request header field. */
+                setRequestProperty(key: java.lang.String, value: java.lang.String): void;
+                /** Opens a communications link to the resource referenced by this URL. */
+                connect(): void;
+            }
+        }
+
         namespace util {
             namespace stream {
                 /** A sequence of primitive int-valued elements supporting sequential and parallel aggregate operations. */
@@ -1177,6 +1338,7 @@ declare global {
                     // Stream of int values
                 }
             }
+
 
             /** An ordered collection (sequence). */
             interface List<T> extends java.util.Collection<T> {
@@ -1286,6 +1448,36 @@ declare global {
                 remove(): void;
             }
 
+            /** An iterator for lists that allows bidirectional traversal and modification. */
+            interface ListIterator<T> extends Iterator<T> {
+                /** Returns true if this list iterator has more elements when traversing in the forward direction. */
+                hasNext(): boolean;
+
+                /** Returns the next element in the list and advances the cursor position. */
+                next(): T;
+
+                /** Returns true if this list iterator has more elements when traversing in the reverse direction. */
+                hasPrevious(): boolean;
+
+                /** Returns the previous element in the list and moves the cursor position backwards. */
+                previous(): T;
+
+                /** Returns the index of the element that would be returned by a subsequent call to next(). */
+                nextIndex(): int;
+
+                /** Returns the index of the element that would be returned by a subsequent call to previous(). */
+                previousIndex(): int;
+
+                /** Removes from the list the last element that was returned by next() or previous(). */
+                remove(): void;
+
+                /** Replaces the last element returned by next() or previous() with the specified element. */
+                set(e: T): void;
+
+                /** Inserts the specified element into the list. */
+                add(e: T): void;
+            }
+
             /** Represents a specific geographical, political, or cultural region. */
             class Locale extends java.lang.Object implements java.io.Serializable {
                 static ENGLISH: Locale;
@@ -1373,6 +1565,24 @@ declare global {
 
                 /** Returns a set of keys in this property list. */
                 stringPropertyNames(): java.util.Set<java.lang.String>;
+            }
+
+            /**
+             * A tagging interface that all event listener interfaces must extend.
+             */
+            interface EventListener {
+            }
+
+            /**
+             * The root class from which all event state objects shall be derived.
+             */
+            class EventObject extends java.lang.Object {
+                constructor(source: java.lang.Object);
+
+                /** The object on which the Event initially occurred. */
+                getSource(): java.lang.Object;
+
+                toString(): string;
             }
         }
 
@@ -1572,6 +1782,223 @@ declare global {
                 constructor(reason: java.lang.String, sqlState: java.lang.String, vendorCode: int);
                 constructor(cause: java.lang.Throwable);
             }
+
+            /**
+             * Reports a warning on a database access.
+             */
+            class SQLWarning extends SQLException {
+                constructor();
+                constructor(reason: java.lang.String);
+                /** Retrieves the warning chained to this SQLWarning object. */
+                getNextWarning(): SQLWarning;
+            }
+
+            /**
+             * The representation (mapping) in the Java programming language of an SQL DATE value.
+             */
+            class Date extends java.util.Date {
+                constructor(date: long);
+                static valueOf(s: java.lang.String): Date;
+            }
+
+            /**
+             * The representation (mapping) in the Java programming language of an SQL TIME value.
+             */
+            class Time extends java.util.Date {
+                constructor(time: long);
+                static valueOf(s: java.lang.String): Time;
+            }
+
+            /**
+             * The representation (mapping) in the Java programming language of an SQL TIMESTAMP value.
+             */
+            class Timestamp extends java.util.Date {
+                constructor(time: long);
+                static valueOf(s: java.lang.String): Timestamp;
+                getNanos(): int;
+                setNanos(n: int): void;
+            }
+
+            /**
+             * The representation of a savepoint, a point within the current transaction
+             * that can be referenced from the rollback method.
+             */
+            interface Savepoint {
+                /** Retrieves the generated ID for the savepoint. */
+                getSavepointId(): int;
+                /** Retrieves the name of the savepoint. */
+                getSavepointName(): java.lang.String;
+            }
+
+            /**
+             * The mapping in the Java programming language of an SQL REF value.
+             */
+            interface Ref {
+                /** Retrieves the fully-qualified SQL name of the SQL structured type. */
+                getBaseTypeName(): java.lang.String;
+                /** Retrieves the referenced object. */
+                getObject(): java.lang.Object;
+                getObject(map: java.util.Map<java.lang.String, java.lang.Class<any>>): java.lang.Object;
+            }
+
+            /**
+             * The representation (mapping) in the Java programming language of an SQL BLOB value.
+             */
+            interface Blob {
+                /** Returns the number of bytes in the BLOB value. */
+                length(): long;
+                /** Retrieves all or part of the BLOB value as a byte array. */
+                getBytes(pos: long, length: int): byte[];
+                /** Retrieves the BLOB value as a stream. */
+                getBinaryStream(): java.io.InputStream;
+                getBinaryStream(pos: long, length: long): java.io.InputStream;
+            }
+
+            /**
+             * The mapping in the Java programming language of an SQL CLOB value.
+             */
+            interface Clob {
+                /** Retrieves the number of characters in the CLOB value. */
+                length(): long;
+                /** Retrieves a copy of the specified substring. */
+                getSubString(pos: long, length: int): java.lang.String;
+                /** Retrieves the CLOB value as a character stream. */
+                getCharacterStream(): java.io.Reader;
+                getCharacterStream(pos: long, length: long): java.io.Reader;
+                /** Retrieves the CLOB value as an ascii stream. */
+                getAsciiStream(): java.io.InputStream;
+            }
+
+            /**
+             * The mapping in the Java programming language of an SQL NCLOB value.
+             */
+            interface NClob extends Clob {
+            }
+
+            /**
+             * The mapping in the Java programming language for the SQL type ARRAY.
+             */
+            interface Array {
+                /** Retrieves the SQL type name of the elements in the array. */
+                getBaseTypeName(): java.lang.String;
+                /** Retrieves the JDBC type of the elements in the array. */
+                getBaseType(): int;
+                /** Retrieves the contents of the SQL ARRAY value as a Java array. */
+                getArray(): java.lang.Object;
+                getArray(map: java.util.Map<java.lang.String, java.lang.Class<any>>): java.lang.Object;
+                /** Retrieves a result set containing the elements of the array. */
+                getResultSet(): ResultSet;
+                getResultSet(map: java.util.Map<java.lang.String, java.lang.Class<any>>): ResultSet;
+            }
+
+            /**
+             * The representation (mapping) in the Java programming language of an SQL ROWID value.
+             */
+            interface RowId {
+                /** Returns an array of bytes representing the value of the SQL ROWID. */
+                getBytes(): byte[];
+            }
+
+            /**
+             * The mapping in the Java programming language for the SQL XML type.
+             */
+            interface SQLXML {
+                /** Retrieves the XML value as a String. */
+                getString(): java.lang.String;
+                /** Sets the XML value for this SQLXML instance. */
+                setString(value: java.lang.String): void;
+                /** Retrieves a stream to read the XML value. */
+                getBinaryStream(): java.io.InputStream;
+                /** Retrieves the XML value as a character stream. */
+                getCharacterStream(): java.io.Reader;
+                /** Frees the XML value that this object represents. */
+                free(): void;
+            }
+
+            /**
+             * An object that can be used to get information about the types and properties
+             * of the columns in a ResultSet object.
+             */
+            interface ResultSetMetaData {
+                /** Returns the number of columns in this ResultSet object. */
+                getColumnCount(): int;
+                /** Gets the designated column's table's catalog name. */
+                getCatalogName(column: int): java.lang.String;
+                /** Returns the fully-qualified name of the Java class to which values will be mapped. */
+                getColumnClassName(column: int): java.lang.String;
+                /** Indicates the designated column's normal maximum width in characters. */
+                getColumnDisplaySize(column: int): int;
+                /** Gets the designated column's suggested title for use in printouts. */
+                getColumnLabel(column: int): java.lang.String;
+                /** Get the designated column's name. */
+                getColumnName(column: int): java.lang.String;
+                /** Retrieves the designated column's SQL type. */
+                getColumnType(column: int): int;
+                /** Retrieves the designated column's database-specific type name. */
+                getColumnTypeName(column: int): java.lang.String;
+                /** Get the designated column's table's schema. */
+                getSchemaName(column: int): java.lang.String;
+                /** Gets the designated column's table name. */
+                getTableName(column: int): java.lang.String;
+                /** Indicates whether the designated column is automatically numbered. */
+                isAutoIncrement(column: int): boolean;
+                /** Indicates whether a column's case matters. */
+                isCaseSensitive(column: int): boolean;
+                /** Indicates whether the designated column is definitely not writable. */
+                isReadOnly(column: int): boolean;
+                /** Indicates whether the designated column can be used in a WHERE clause. */
+                isSearchable(column: int): boolean;
+                /** Indicates whether values in the designated column are signed numbers. */
+                isSigned(column: int): boolean;
+                /** Indicates whether it is possible for a write on the designated column to succeed. */
+                isWritable(column: int): boolean;
+                /** Indicates the nullability of values in the designated column. */
+                isNullable(column: int): int;
+                /** Gets the designated column's specified column size. */
+                getPrecision(column: int): int;
+                /** Gets the designated column's number of digits to right of the decimal point. */
+                getScale(column: int): int;
+            }
+
+            /**
+             * An object that contains information about the columns in a RowSet object.
+             */
+            interface RowSetMetaData extends ResultSetMetaData {
+                /** Sets the number of columns in the RowSet object. */
+                setColumnCount(columnCount: int): void;
+                /** Sets whether the designated column is automatically numbered. */
+                setAutoIncrement(columnIndex: int, property: boolean): void;
+                /** Sets whether the designated column is case sensitive. */
+                setCaseSensitive(columnIndex: int, property: boolean): void;
+                /** Sets whether the designated column can be used in a WHERE clause. */
+                setSearchable(columnIndex: int, property: boolean): void;
+                /** Sets whether the designated column is a cash value. */
+                setCurrency(columnIndex: int, property: boolean): void;
+                /** Sets whether the designated column's value can be set to NULL. */
+                setNullable(columnIndex: int, property: int): void;
+                /** Sets whether the designated column is a signed number. */
+                setSigned(columnIndex: int, property: boolean): void;
+                /** Sets the designated column's normal maximum width in chars. */
+                setColumnDisplaySize(columnIndex: int, size: int): void;
+                /** Sets the suggested column title for use in printouts and displays. */
+                setColumnLabel(columnIndex: int, label: java.lang.String): void;
+                /** Sets the name of the designated column. */
+                setColumnName(columnIndex: int, columnName: java.lang.String): void;
+                /** Sets the name of the designated column's table's schema. */
+                setSchemaName(columnIndex: int, schemaName: java.lang.String): void;
+                /** Sets the designated column's number of decimal digits. */
+                setPrecision(columnIndex: int, precision: int): void;
+                /** Sets the designated column's number of digits to the right of the decimal point. */
+                setScale(columnIndex: int, scale: int): void;
+                /** Sets the designated column's table name. */
+                setTableName(columnIndex: int, tableName: java.lang.String): void;
+                /** Sets the designated column's table's catalog name. */
+                setCatalogName(columnIndex: int, catalogName: java.lang.String): void;
+                /** Sets the designated column's SQL type. */
+                setColumnType(columnIndex: int, SQLType: int): void;
+                /** Sets the designated column's type name. */
+                setColumnTypeName(columnIndex: int, typeName: java.lang.String): void;
+            }
         }
 
         namespace sql {
@@ -1605,12 +2032,116 @@ declare global {
 
     namespace javax {
         namespace sql {
+            /**
+             * The interface that adds support to the JDBC API for the JavaBeans component model.
+             * A RowSet object may be a JavaBeans component that can be used as a source of data.
+             */
+            interface RowSet extends java.sql.ResultSet {
+                // RowSet extends ResultSet with additional properties
+            }
+
+            /**
+             * An interface that must be implemented by a component that wants to be notified
+             * when a significant event happens in the life of a RowSet object.
+             */
+            interface RowSetListener extends java.util.EventListener {
+                /** Notifies registered listeners that a RowSet object in the given RowSetEvent object has changed. */
+                rowSetChanged(event: RowSetEvent): void;
+                /** Notifies registered listeners that a RowSet object has had a change in one of its rows. */
+                rowChanged(event: RowSetEvent): void;
+                /** Notifies registered listeners that a RowSet object's cursor has moved. */
+                cursorMoved(event: RowSetEvent): void;
+            }
+
+            /**
+             * An Event object generated when an event occurs to a RowSet object.
+             */
+            class RowSetEvent extends java.util.EventObject {
+                constructor(source: RowSet);
+            }
+
             namespace rowset {
                 /**
                  * A CachedRowSet object is a container for rows of data that caches its rows in memory.
                  * Alias for java.sql.rowset.CachedRowSet.
                  */
                 interface CachedRowSet extends java.sql.rowset.CachedRowSet {
+                }
+
+                /**
+                 * An extension of SQLException that provides information about database warnings
+                 * set on RowSet objects.
+                 */
+                class RowSetWarning extends java.sql.SQLException {
+                    constructor();
+                    constructor(reason: java.lang.String);
+                    constructor(reason: java.lang.String, SQLState: java.lang.String);
+                    constructor(reason: java.lang.String, SQLState: java.lang.String, vendorCode: int);
+                    /** Retrieves the warning chained to this RowSetWarning object. */
+                    getNextWarning(): RowSetWarning;
+                    /** Sets this RowSetWarning object as the next warning. */
+                    setNextWarning(warning: RowSetWarning): void;
+                }
+
+                namespace spi {
+                    /**
+                     * The synchronization mechanism that provides reader/writer capabilities for
+                     * disconnected RowSet objects.
+                     */
+                    interface SyncProvider {
+                        /** Returns the unique identifier for this SyncProvider object. */
+                        getProviderID(): java.lang.String;
+                        /** Returns a javax.sql.RowSetReader object. */
+                        getRowSetReader(): RowSetReader;
+                        /** Returns a javax.sql.RowSetWriter object. */
+                        getRowSetWriter(): RowSetWriter;
+                        /** Returns a constant indicating the grade of synchronization a RowSet object can expect. */
+                        getProviderGrade(): int;
+                        /** Sets a lock on the underlying data source at the level indicated by datasource_lock. */
+                        setDataSourceLock(datasource_lock: int): void;
+                        /** Returns the current data source lock severity level active in this SyncProvider implementation. */
+                        getDataSourceLock(): int;
+                        /** Returns whether this SyncProvider implementation can perform synchronization. */
+                        supportsUpdatableView(): int;
+                        /** Returns the release version of this SyncProvider instance. */
+                        getVersion(): java.lang.String;
+                        /** Returns the vendor name of this SyncProvider instance. */
+                        getVendor(): java.lang.String;
+                    }
+
+                    /**
+                     * The facility that a disconnected RowSet object calls on to populate itself with rows of data.
+                     */
+                    interface RowSetReader {
+                        /** Reads the new contents of the calling RowSet object. */
+                        readData(caller: RowSetInternal): void;
+                    }
+
+                    /**
+                     * An object that implements the RowSetWriter interface that can be called on
+                     * to write a RowSet object's contents back to the data source from which it obtained its data.
+                     */
+                    interface RowSetWriter {
+                        /** Writes the changes in this RowSet object to its data source. */
+                        writeData(caller: RowSetInternal): boolean;
+                    }
+
+                    /**
+                     * The interface that a RowSet object implements in order to present itself to a RowSetReader
+                     * or RowSetWriter object.
+                     */
+                    interface RowSetInternal {
+                        /** Retrieves the parameters that have been set for this RowSet object's command. */
+                        getParams(): java.lang.Object[];
+                        /** Retrieves the Connection object that was passed to this RowSet object. */
+                        getConnection(): java.sql.Connection;
+                        /** Sets the given RowSetMetaData object as the RowSetMetaData object for this RowSet object. */
+                        setMetaData(md: java.sql.RowSetMetaData): void;
+                        /** Retrieves a ResultSet object containing the original value of this RowSet object. */
+                        getOriginal(): java.sql.ResultSet;
+                        /** Retrieves a ResultSet object containing the original value of the current row only. */
+                        getOriginalRow(): java.sql.ResultSet;
+                    }
                 }
             }
         }
@@ -2759,6 +3290,42 @@ declare global {
                              * @throws Exception - If the driver could not be initialized.
                              */
                             initializeDriver(driver: java.lang.String): void;
+                        }
+
+                        /**
+                         * An implementation of CachedRowSet that retrieves values based on the column label value.
+                         * CachedRowSetImpl uses the column name which ignores alias for drivers that correctly follow
+                         * the JDBC 4.0 recommendations. Using the column label ensures that aliases will work for these drivers.
+                         */
+                        class MirthCachedRowSet extends java.lang.Object implements javax.sql.rowset.CachedRowSet {
+                            // CachedRowSet methods
+                            /** Moves the cursor to the given row number in this ResultSet object. */
+                            absolute(row: int): boolean;
+                            /** Moves the cursor to the first row in this ResultSet object. */
+                            first(): boolean;
+                            /** Moves the cursor to the last row in this ResultSet object. */
+                            last(): boolean;
+                            /** Moves the cursor to the front of this ResultSet object, just before the first row. */
+                            beforeFirst(): void;
+                            /** Moves the cursor to the end of this ResultSet object, just after the last row. */
+                            afterLast(): void;
+                            /** Retrieves the number of rows in this CachedRowSet object. */
+                            size(): int;
+
+                            // ResultSet methods
+                            /** Moves the cursor forward one row from its current position. */
+                            next(): boolean;
+                            /** Retrieves the value of the designated column as a String. */
+                            getString(columnLabel: java.lang.String): java.lang.String;
+                            getString(columnIndex: int): java.lang.String;
+                            /** Retrieves the value of the designated column as an int. */
+                            getInt(columnLabel: java.lang.String): int;
+                            getInt(columnIndex: int): int;
+                            /** Retrieves the value of the designated column as an Object. */
+                            getObject(columnLabel: java.lang.String): java.lang.Object;
+                            getObject(columnIndex: int): java.lang.Object;
+                            /** Releases this ResultSet object's database and JDBC resources immediately. */
+                            close(): void;
                         }
 
                         /**
@@ -4127,6 +4694,312 @@ declare global {
                          * @returns A Map of destination connector names linked to their corresponding connector metadata ID.
                          */
                         getDestinationIdMap(): java.util.Map<java.lang.String, java.lang.Integer>;
+
+                        /**
+                         * Returns a string representation of the object.
+                         * @returns A string representation of the object.
+                         */
+                        toString(): string;
+                    }
+
+                    /**
+                     * Provides JSON utility methods.
+                     */
+                    class JsonUtil extends java.lang.Object {
+                        /**
+                         * Formats a JSON string with indented markup.
+                         * @param input - The JSON string to format.
+                         * @returns The formatted JSON string.
+                         */
+                        static prettyPrint(input: java.lang.String): java.lang.String;
+
+                        /**
+                         * Escapes any special JSON characters in the input.
+                         * @param input - The string to escape.
+                         * @returns The escaped string.
+                         */
+                        static escape(input: java.lang.String): java.lang.String;
+
+                        /**
+                         * Converts a JSON string to XML.
+                         * This is the same as calling toXml(jsonString, false, false).
+                         * @param jsonString - The JSON string to convert.
+                         * @returns The converted XML string.
+                         * @throws Exception - If the conversion failed.
+                         */
+                        static toXml(jsonString: java.lang.String): java.lang.String;
+
+                        /**
+                         * Converts a JSON string to XML.
+                         * @param jsonString - The JSON string to convert.
+                         * @param multiplePI - If true, the <?xml-multiple...?> processing instruction will be included for arrays.
+                         * @param prettyPrint - Whether or not to fully indent the XML output.
+                         * @returns The converted XML string.
+                         * @throws Exception - If the conversion failed.
+                         */
+                        static toXml(jsonString: java.lang.String, multiplePI: boolean, prettyPrint: boolean): java.lang.String;
+                    }
+
+                    /**
+                     * Convenience class to allow fluent building of lists.
+                     */
+                    class ListBuilder extends java.lang.Object implements java.util.List<java.lang.Object> {
+                        /**
+                         * Adds an element to the list using the add method, and returns this builder.
+                         * @param e - Element to be appended to this list.
+                         * @returns This ListBuilder instance.
+                         */
+                        append(e: java.lang.Object): ListBuilder;
+
+                        /** Returns the number of elements in this list. */
+                        size(): int;
+                        /** Returns true if this list contains no elements. */
+                        isEmpty(): boolean;
+                        /** Returns true if this list contains the specified element. */
+                        contains(o: java.lang.Object): boolean;
+                        /** Returns an iterator over the elements in this list in proper sequence. */
+                        iterator(): java.util.Iterator<java.lang.Object>;
+                        /** Returns an array containing all of the elements in this list in proper sequence. */
+                        toArray(): java.lang.Object[];
+                        /** Returns an array containing all of the elements in this list in proper sequence. */
+                        toArray(a: java.lang.Object[]): java.lang.Object[];
+                        /** Appends the specified element to the end of this list. */
+                        add(e: java.lang.Object): boolean;
+                        /** Inserts the specified element at the specified position in this list. */
+                        add(index: int, element: java.lang.Object): void;
+                        /** Removes the first occurrence of the specified element from this list, if it is present. */
+                        remove(o: java.lang.Object): boolean;
+                        /** Removes the element at the specified position in this list. */
+                        remove(index: int): java.lang.Object;
+                        /** Returns true if this list contains all of the elements of the specified collection. */
+                        containsAll(c: java.util.Collection<java.lang.Object>): boolean;
+                        /** Appends all of the elements in the specified collection to the end of this list. */
+                        addAll(c: java.util.Collection<java.lang.Object>): boolean;
+                        /** Inserts all of the elements in the specified collection into this list at the specified position. */
+                        addAll(index: int, c: java.util.Collection<java.lang.Object>): boolean;
+                        /** Removes from this list all of its elements that are contained in the specified collection. */
+                        removeAll(c: java.util.Collection<java.lang.Object>): boolean;
+                        /** Retains only the elements in this list that are contained in the specified collection. */
+                        retainAll(c: java.util.Collection<java.lang.Object>): boolean;
+                        /** Removes all of the elements from this list. */
+                        clear(): void;
+                        /** Returns the element at the specified position in this list. */
+                        get(index: int): java.lang.Object;
+                        /** Replaces the element at the specified position in this list with the specified element. */
+                        set(index: int, element: java.lang.Object): java.lang.Object;
+                        /** Returns the index of the first occurrence of the specified element in this list, or -1 if not found. */
+                        indexOf(o: java.lang.Object): int;
+                        /** Returns the index of the last occurrence of the specified element in this list, or -1 if not found. */
+                        lastIndexOf(o: java.lang.Object): int;
+                        /** Returns a list iterator over the elements in this list. */
+                        listIterator(): java.util.ListIterator<java.lang.Object>;
+                        /** Returns a list iterator over the elements in this list, starting at the specified position. */
+                        listIterator(index: int): java.util.ListIterator<java.lang.Object>;
+                        /** Returns a view of the portion of this list between the specified fromIndex, inclusive, and toIndex, exclusive. */
+                        subList(fromIndex: int, toIndex: int): java.util.List<java.lang.Object>;
+                        /** Indicates whether some other object is "equal to" this one. */
+                        equals(obj: java.lang.Object): boolean;
+                        /** Returns a hash code value for the object. */
+                        hashCode(): int;
+                        /** Returns a string representation of the object. */
+                        toString(): string;
+                    }
+
+                    /**
+                     * Convenience class to allow fluent building of lists.
+                     */
+                    class Lists extends java.lang.Object {
+                        constructor();
+
+                        /**
+                         * Instantiates a new ListBuilder using an ArrayList.
+                         * @returns The new ListBuilder instance.
+                         */
+                        static list(): ListBuilder;
+
+                        /**
+                         * Instantiates a new ListBuilder using an ArrayList and the given element.
+                         * @param e - Element to be appended to this list.
+                         * @returns The new ListBuilder instance.
+                         */
+                        static list(e: java.lang.Object): ListBuilder;
+
+                        /**
+                         * Instantiates a new ListBuilder using the given list.
+                         * @param list - The delegate List to use.
+                         * @returns The new ListBuilder instance.
+                         */
+                        static list(list: java.util.List<java.lang.Object>): ListBuilder;
+                    }
+
+                    /**
+                     * Convenience class to allow fluent building of maps.
+                     */
+                    class MapBuilder extends java.lang.Object implements java.util.Map<java.lang.Object, java.lang.Object> {
+                        /**
+                         * Adds an entry to the map using the put method, and returns this builder.
+                         * @param key - Key with which the specified value is to be associated.
+                         * @param value - Value to be associated with the specified key.
+                         * @returns This MapBuilder instance.
+                         */
+                        add(key: java.lang.Object, value: java.lang.Object): MapBuilder;
+
+                        /** Returns the number of key-value mappings in this map. */
+                        size(): int;
+                        /** Returns true if this map contains no key-value mappings. */
+                        isEmpty(): boolean;
+                        /** Returns true if this map contains a mapping for the specified key. */
+                        containsKey(key: java.lang.Object): boolean;
+                        /** Returns true if this map maps one or more keys to the specified value. */
+                        containsValue(value: java.lang.Object): boolean;
+                        /** Returns the value to which the specified key is mapped, or null if this map contains no mapping for the key. */
+                        get(key: java.lang.Object): java.lang.Object | null;
+                        /** Associates the specified value with the specified key in this map. */
+                        put(key: java.lang.Object, value: java.lang.Object): java.lang.Object | null;
+                        /** Removes the mapping for a key from this map if it is present. */
+                        remove(key: java.lang.Object): java.lang.Object | null;
+                        /** Copies all of the mappings from the specified map to this map. */
+                        putAll(m: java.util.Map<java.lang.Object, java.lang.Object>): void;
+                        /** Removes all of the mappings from this map. */
+                        clear(): void;
+                        /** Returns a Set view of the keys contained in this map. */
+                        keySet(): java.util.Set<java.lang.Object>;
+                        /** Returns a Collection view of the values contained in this map. */
+                        values(): java.util.Collection<java.lang.Object>;
+                        /** Returns a Set view of the mappings contained in this map. */
+                        entrySet(): java.util.Set<java.util.Map.Entry<java.lang.Object, java.lang.Object>>;
+                        /** Indicates whether some other object is "equal to" this one. */
+                        equals(obj: java.lang.Object): boolean;
+                        /** Returns a hash code value for the object. */
+                        hashCode(): int;
+                        /** Returns a string representation of the object. */
+                        toString(): string;
+                    }
+
+                    /**
+                     * Convenience class to allow fluent building of maps.
+                     */
+                    class Maps extends java.lang.Object {
+                        constructor();
+
+                        /**
+                         * Instantiates a new MapBuilder using a HashMap.
+                         * @returns The new MapBuilder instance.
+                         */
+                        static map(): MapBuilder;
+
+                        /**
+                         * Instantiates a new MapBuilder using a HashMap and the given key/value entry.
+                         * @param key - Key with which the specified value is to be associated.
+                         * @param value - Value to be associated with the specified key.
+                         * @returns The new MapBuilder instance.
+                         */
+                        static map(key: java.lang.Object, value: java.lang.Object): MapBuilder;
+
+                        /**
+                         * Instantiates a new MapBuilder using the given map.
+                         * @param map - The delegate map to use.
+                         * @returns The new MapBuilder instance.
+                         */
+                        static map(map: java.util.Map<java.lang.Object, java.lang.Object>): MapBuilder;
+                    }
+
+                    /**
+                     * Represents HTTP message headers.
+                     */
+                    class MessageHeaders extends java.lang.Object {
+                        /**
+                         * Instantiates a new MessageHeaders object.
+                         * @param delegate - The underlying Map to use for storing headers.
+                         */
+                        constructor(delegate: java.util.Map<java.lang.String, java.util.List<java.lang.String>>);
+
+                        /**
+                         * Get the first header value for the given key.
+                         * @param key - The name of the header key.
+                         * @returns The associated value or null if no value exists.
+                         * @deprecated This method is deprecated and will soon be removed. Please use getHeader(key) or getHeaderList(key) instead.
+                         */
+                        get(key: java.lang.String): java.lang.String | null;
+
+                        /**
+                         * Get the first header value for the given key.
+                         * @param key - The name of the header key.
+                         * @returns The associated value or null if no value exists.
+                         */
+                        getHeader(key: java.lang.String): java.lang.String | null;
+
+                        /**
+                         * Get all header values for the given key.
+                         * @param key - The name of header key.
+                         * @returns A list of all header values for the given key or null if no values exist.
+                         */
+                        getHeaderList(key: java.lang.String): java.util.List<java.lang.String> | null;
+
+                        /**
+                         * Get all header keys.
+                         * @returns A set of all header keys.
+                         */
+                        getKeys(): java.util.Set<java.lang.String>;
+
+                        /**
+                         * Check if headers exist for a given key.
+                         * @param key - The name of the header key.
+                         * @returns true if headers exist for the given key, false otherwise.
+                         */
+                        contains(key: java.lang.String): boolean;
+
+                        /**
+                         * Returns a string representation of the object.
+                         * @returns A string representation of the object.
+                         */
+                        toString(): string;
+                    }
+
+                    /**
+                     * Represents HTTP message parameters (query string or form parameters).
+                     */
+                    class MessageParameters extends java.lang.Object {
+                        /**
+                         * Instantiates a new MessageParameters object.
+                         * @param delegate - The underlying Map to use for storing parameters.
+                         */
+                        constructor(delegate: java.util.Map<java.lang.String, java.util.List<java.lang.String>>);
+
+                        /**
+                         * Get the first parameter value for the given key.
+                         * @param key - The name of the parameter key.
+                         * @returns The associated value or null if no value exists.
+                         * @deprecated This method is deprecated and will soon be removed. Please use getParameter(key) or getParameterList(key) instead.
+                         */
+                        get(key: java.lang.String): java.lang.String | null;
+
+                        /**
+                         * Get the first parameter value for the given key.
+                         * @param key - The name of the parameter key.
+                         * @returns The associated value or null if no value exists.
+                         */
+                        getParameter(key: java.lang.String): java.lang.String | null;
+
+                        /**
+                         * Get all parameter values for the given key.
+                         * @param key - The name of parameter key.
+                         * @returns A list of all parameter values for the given key or null if no values exist.
+                         */
+                        getParameterList(key: java.lang.String): java.util.List<java.lang.String> | null;
+
+                        /**
+                         * Get all parameter keys.
+                         * @returns A set of all parameter keys.
+                         */
+                        getKeys(): java.util.Set<java.lang.String>;
+
+                        /**
+                         * Check if parameters exist for a given key.
+                         * @param key - The name of the parameter key.
+                         * @returns true if parameters exist for the given key, false otherwise.
+                         */
+                        contains(key: java.lang.String): boolean;
 
                         /**
                          * Returns a string representation of the object.

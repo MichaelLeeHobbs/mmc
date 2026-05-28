@@ -1,0 +1,8 @@
+version: '3.7'
+
+services:
+  mirth4_5_2:
+    image: nextgenhealthcare/connect:4.5.2
+    ports:
+      - "10452:8443"
+
