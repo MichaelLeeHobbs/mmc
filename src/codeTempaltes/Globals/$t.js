@@ -3,11 +3,14 @@
  * Check if $t is already defined. If not then define it.
  */
 if (typeof $t === 'undefined') {
+  // eslint-disable-next-line no-unused-vars
   function $t(cb) {
     try {
       return cb()
-    } catch (ignore) {
+      // eslint-disable-next-line no-unused-vars
+    } catch (e) {
       // do nothing
     }
   }
 }
+/* exported $t */

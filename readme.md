@@ -85,29 +85,29 @@ description. Read the source — each function documents its parameters, return 
 
 General-purpose helpers meant to live in your Code Template Library (or, where noted, a Global Script).
 
+Related functions are grouped into consolidated namespace files (e.g. everything string-related lives
+in `stringUtils`). Each function keeps its own JSDoc, so the per-function descriptions still show up in
+Mirth. A small `utils` bridge exposes them all under one object (`utils.string`, `utils.date`, …).
+
 | Template | What it does |
 | --- | --- |
 | [`fetch.mirth.js`](src/codeTempaltes/Globals/fetch.mirth.js) | A partial `fetch()` implementation over Apache HttpClient. Supports GET/POST/PUT/DELETE, headers, redirects, self-signed certs (`ignoreSSLError`), **mutual TLS (`clientCert`)**, and `.json()` / `.text()` / `.xml()` / `.byteArray()` body readers. |
-| [`$t.js`](src/codeTempaltes/Globals/$t.js) | Inline try/catch — `$t(() => a.b.c)` stands in for optional chaining (`a?.b?.c`), which Rhino lacks. |
+| [`stringUtils.js`](src/codeTempaltes/Globals/stringUtils.js) | Text helpers: `atob`/`btoa` (Base-64 via `java.util.Base64`), word-wrap for length-limited fields (`wrapText`, `wrapArray`, `limitElementLength`), line-break encoding, and report parsing (`splitReportText`, `splitFindingsAndImpression`, `filterLinesContaining`). |
+| [`arrayUtils.js`](src/codeTempaltes/Globals/arrayUtils.js) | Array helpers: `fromArrayList` (Java `List`/`ArrayList` → JS array) and `toObject`. |
+| [`dateUtils.js`](src/codeTempaltes/Globals/dateUtils.js) | Date/time helpers: HL7 ⇄ ISO ⇄ `Date` conversions, `convertTimeZone` (IANA zones via `java.time`), `getAge`, `isOlderThan`, and the cross-scope `dateUtils.Timer`. |
+| [`jsonUtils.js`](src/codeTempaltes/Globals/jsonUtils.js) | JSON helpers: circular-safe `stringify`/`stringifyCircular` for Rhino, `fromXml` (Mirth E4X XML → JSON with optional per-node callback), and `denormalizeSQL`. |
+| [`errorUtils.js`](src/codeTempaltes/Globals/errorUtils.js) | Error helpers: `toString` (message + stack across JS/Java error types) and variadic `combine` (merges multiple errors into one). |
+| [`validationUtils.js`](src/codeTempaltes/Globals/validationUtils.js) | Validation helpers: `parseInt` with default/min/max bounds. |
+| [`channelUtils.js`](src/codeTempaltes/Globals/channelUtils.js) | Channel infrastructure: `batchJson`/`batchText` batch processors, `getSourceMsg`, `mapMessageRoute`, `routeJsonMsg`, the rule-driven `responseHandler`, and `required` (deploy-time dependency check). |
+| [`hl7Utils.js`](src/codeTempaltes/Globals/hl7Utils.js) | HL7 v2 helpers: `fixLineBreaks` (repairs stray unescaped line breaks) and `fromXml` (Mirth XML → encoded HL7 v2). |
+| [`pdfUtils.js`](src/codeTempaltes/Globals/pdfUtils.js) | `extractText` — pulls text out of a PDF byte array using Mirth's bundled iText (2.1.7). |
+| [`utils.js`](src/codeTempaltes/Globals/utils.js) | Bridge object exposing all the namespaces above as `utils.string`, `utils.date`, `utils.json`, `utils.array`, `utils.error`, `utils.validation`, and `utils.channel`. |
+| [`$t.js`](src/codeTempaltes/Globals/$t.js) | Inline try/catch — `$t(() => a.b.c)` stands in for optional chaining (`a?.b?.c`), which Rhino lacks. Swallows the error and returns `undefined`. |
+| [`tryCatch.js`](src/codeTempaltes/Globals/tryCatch.js) | Synchronous Go-style result tuple — `tryCatch(fn)` returns `[data, null]` or `[null, error]`, surfacing the error instead of swallowing it (the explicit counterpart to `$t`). |
 | [`$retry.js`](src/codeTempaltes/Globals/$retry.js) | Retries a callback with configurable attempts and backoff; optionally rethrows the last error. |
 | [`$sleep.js`](src/codeTempaltes/Globals/$sleep.js) | Blocks the thread for N milliseconds via `java.lang.Thread.sleep`. |
-| [`Timer.js`](src/codeTempaltes/Globals/Timer.js) | Code timer that survives across a channel's source/destination scopes by stashing timings in the channel map. |
-| [`assert.js`](src/codeTempaltes/Globals/assert.js) | Throws if a condition is falsy. |
-| [`required.js`](src/codeTempaltes/Globals/required.js) | Fails fast at deploy time if expected functions/libraries aren't on the classpath — no more cloning a channel just to find out a template is missing. |
-| [`atob.js`](src/codeTempaltes/Globals/atob.js) / [`btoa.js`](src/codeTempaltes/Globals/btoa.js) | Base-64 decode/encode using `java.util.Base64`. |
-| [`combineErrors.js`](src/codeTempaltes/Globals/combineErrors.js) | Merges two errors (messages + stack traces) into one. |
-| [`convertTimeZone.js`](src/codeTempaltes/Globals/convertTimeZone.js) | Converts an `yyyyMMddHHmmss` date-time string between IANA time zones using `java.time`. |
-| [`arrayListToArray.js`](src/codeTempaltes/Globals/arrayListToArray.js) | Converts a Java `List`/`ArrayList` into a JS array. |
-| [`denormalizeSQL.js`](src/codeTempaltes/Globals/denormalizeSQL.js) | Inlines parameters into a `?`-placeholder SQL string for readable logging. |
-| [`extractTextFromPDF.js`](src/codeTempaltes/Globals/extractTextFromPDF.js) | Extracts text from a PDF byte array using Mirth's bundled iText (2.1.7). |
-| [`getSourceMsg.js`](src/codeTempaltes/Globals/getSourceMsg.js) | Fetches any representation (raw, transformed, encoded, response, …) of the current source message. |
-| [`batchJsonHandler.js`](src/codeTempaltes/Globals/batchJsonHandler.js) / [`batchTextHandler.js`](src/codeTempaltes/Globals/batchTextHandler.js) | Custom batch processors that split an inbound message into individual records, one per `next()` call. |
-| [`fixHL7LineBreaks.js`](src/codeTempaltes/Globals/fixHL7LineBreaks.js) | Repairs HL7 messages with stray, unescaped line breaks inside fields. |
-| [`xmlToHL7.js`](src/codeTempaltes/Globals/xmlToHL7.js) | Serializes Mirth XML back to encoded HL7 v2, cleaning common artifacts. |
-| [`xmlToJson.js`](src/codeTempaltes/Globals/xmlToJson.js) | Converts Mirth E4X XML to JSON, with an optional per-node transform callback. |
-| [`mapMessageRoute.js`](src/codeTempaltes/Globals/mapMessageRoute.js) | Records the channel-to-channel route a message took into `$c('route')`. Designed for the Preprocessor Global Script. |
-| [`responseHandler.js`](src/codeTempaltes/Globals/responseHandler.js) | Rule-driven response transformer for retry/error handling based on the response error message. |
-| [`splitStringOnSpaceAndLength.js`](src/codeTempaltes/Globals/splitStringOnSpaceAndLength.js) / [`limitArrElementLength.js`](src/codeTempaltes/Globals/limitArrElementLength.js) | Word-wrap helpers for length-limited fields (e.g. OBX/NTE). |
+| [`assert.js`](src/codeTempaltes/Globals/assert.js) | Throws if a condition is falsy; also `assert.ok` and `assert.array` for batches of `[condition, message]` pairs. |
+| [`required.js`](src/codeTempaltes/Globals/required.js) | Deprecated thin wrapper that delegates to `channelUtils.required` — fails fast at deploy time if expected functions/libraries aren't on the classpath. |
 
 ### 🗄️ Database — [`src/codeTempaltes/DB`](src/codeTempaltes/DB)
 
@@ -165,7 +165,7 @@ Most files in `Globals`, `DB`, and `HL7Message` are designed to be Code Template
 ### Using a Global Script
 
 A few templates are meant for **Global Scripts** rather than the template library — for example
-[`mapMessageRoute.js`](src/codeTempaltes/Globals/mapMessageRoute.js) (Preprocessor) and the
+[`channelUtils.mapMessageRoute`](src/codeTempaltes/Globals/channelUtils.js) (Preprocessor) and the
 [`StandaloneMirthBackup`](src/codeTempaltes/StandaloneMirthBackup) setup. Each file's header documents where it
 belongs.
 
@@ -240,6 +240,18 @@ var secure = fetch('https://secure.example.com/api', {
 var result = $retry(function () {
   return fetch('https://example.com/sometimes-down').json();
 }, {retries: 3, backoff: 2000, throwOnFail: true});
+```
+
+**Handle errors explicitly with `tryCatch`** (forces you to deal with the failure path up front, instead of letting an exception escape):
+
+```javascript
+var result = tryCatch(function () { return fetch('https://example.com/api').json(); });
+var data = result[0], error = result[1]; // index access — Rhino may lack array destructuring
+if (error) {
+  logger.error('fetch failed: ' + error);
+  return; // handle and bail
+}
+// data is safe to use here
 ```
 
 **Fail fast if a dependency is missing (in a Deploy or Preprocessor script):**
