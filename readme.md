@@ -101,6 +101,7 @@ Mirth. A small `utils` bridge exposes them all under one object (`utils.string`,
 | [`channelUtils.js`](src/codeTempaltes/Globals/channelUtils.js) | Channel infrastructure: `batchJson`/`batchText` batch processors, `getSourceMsg`, `mapMessageRoute`, `routeJsonMsg`, the rule-driven `responseHandler`, and `required` (deploy-time dependency check). |
 | [`hl7Utils.js`](src/codeTempaltes/Globals/hl7Utils.js) | HL7 v2 helpers: `fixLineBreaks` (repairs stray unescaped line breaks) and `fromXml` (Mirth XML → encoded HL7 v2). |
 | [`pdfUtils.js`](src/codeTempaltes/Globals/pdfUtils.js) | `extractText` — pulls text out of a PDF byte array using Mirth's bundled iText (2.1.7). |
+| [`mirthEventPoller.js`](src/codeTempaltes/Globals/mirthEventPoller.js) | Generic poller for Mirth's internal event log: `poll({eventName, onEvent, …})` matches events by name, de-dupes by event id in `$gc`, and hands each new event to a pluggable `onEvent` handler as a parsed object (`id`, `username`, `channelName`, `messageIds`, `attributes`, …). Plus `debugDumpEvents` for discovery. |
 | [`utils.js`](src/codeTempaltes/Globals/utils.js) | Bridge object exposing all the namespaces above as `utils.string`, `utils.date`, `utils.json`, `utils.array`, `utils.error`, `utils.validation`, and `utils.channel`. |
 | [`$t.js`](src/codeTempaltes/Globals/$t.js) | Inline try/catch — `$t(() => a.b.c)` stands in for optional chaining (`a?.b?.c`), which Rhino lacks. Swallows the error and returns `undefined`. |
 | [`tryCatch.js`](src/codeTempaltes/Globals/tryCatch.js) | Synchronous Go-style result tuple — `tryCatch(fn)` returns `[data, null]` or `[null, error]`, surfacing the error instead of swallowing it (the explicit counterpart to `$t`). |
@@ -128,9 +129,17 @@ Mirth. A small `utils` bridge exposes them all under one object (`utils.string`,
 ### 💾 Standalone Mirth Backup — [`src/codeTempaltes/StandaloneMirthBackup`](src/codeTempaltes/StandaloneMirthBackup)
 
 A channel-driven backup system that exports the full Mirth server configuration on an hourly/daily/weekly/monthly
-rotation via File Writer destinations. See [`mirthBackup.js`](src/codeTempaltes/StandaloneMirthBackup/mirthBackup.js)
-for the full setup instructions, plus the small date helpers (`getDayName`, `getWeekNumber`, `getMonthName`,
-`getDayOfYear`, `getMirthConfig`) it relies on.
+rotation via File Writer destinations. It's now a single [`mirthBackup.js`](src/codeTempaltes/StandaloneMirthBackup/mirthBackup.js)
+containing both `getMirthConfig` (serializes the running server config to XML) and `mirthBackup` (drives the
+rotation). See the file's header for the full setup instructions.
+
+### 📄 Document — [`src/codeTempaltes/Document.js`](src/codeTempaltes/Document.js)
+
+A paginated text-document builder in a single file, four classes in dependency order:
+`AdvanceString` (word-wrap, centering, templating, character remapping), `Template` (header/footer line
+templates with per-line transformers), `Page` (header + word-wrapped body + footer with min/max line limits),
+and `Document` (splits body text across as many pages as needed, numbering them). `Document.prototype.toHL7`
+can emit the rendered text as HL7 `OBX` segments.
 
 ### 📡 Channels — [`src/channels`](src/channels)
 

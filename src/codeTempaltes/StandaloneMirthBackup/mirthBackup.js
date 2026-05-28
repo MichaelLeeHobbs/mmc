@@ -1,4 +1,23 @@
 /**
+ * Retrieves the full Mirth config as XML with the backup date set to now
+ * @return {[config: string, backupDate: string]}
+ * @author Michael L. Hobbs {@link https://github.com/MichaelLeeHobbs}
+ * @licence Apache License 2.0
+ */
+function getMirthConfig() {
+  const SimpleDateFormat = java.text.SimpleDateFormat
+  const JavaDate = java.util.Date
+  const ObjectXMLSerializer = com.mirth.connect.model.converters.ObjectXMLSerializer
+  const ControllerFactory = com.mirth.connect.server.controllers.ControllerFactory
+  const configurationController = ControllerFactory.getFactory().createConfigurationController()
+  const config = configurationController.getServerConfiguration()
+  const backupDate = new SimpleDateFormat('yyyy-MM-dd HH:mm:ss').format(new JavaDate())
+  config.setDate(backupDate)
+  const serializer = ObjectXMLSerializer.getInstance()
+  return [serializer.serialize(config), backupDate]
+}
+
+/**
  * Creates a Mirth backup, hourly, daily, weekly and monthly. Overwrites the previous backup with the same name.
  * For example On Tuesday backup hour_17_backup.xml was created then on Wednesday would be overwritten at hour 17.
  * Over the course of a year the total size of Mirth backup could exceed 1GB for very large Mirth installs.
@@ -33,57 +52,59 @@
  * @licence Apache License 2.0
  */
 function mirthBackup(keepDaily) {
-    const now = new Date()
-    const getDayOfYear = ()=> Math.floor((Date.now() - Date.parse(new Date().getFullYear(), 0, 0)) / 86400000)
-    const getWeekNumber = () => {
-        const oneJan = new Date(now.getFullYear(), 0, 1)
-        const numberOfDays = Math.floor((now - oneJan) / (24 * 60 * 60 * 1000))
-        return Math.ceil((now.getDay() + 1 + numberOfDays) / 7)
-    }
+  const now = new Date()
+  const getDayOfYear = () => Math.floor((Date.now() - Date.parse(new Date().getFullYear(), 0, 0)) / 86400000)
+  const getWeekNumber = () => {
+    const oneJan = new Date(now.getFullYear(), 0, 1)
+    const numberOfDays = Math.floor((now - oneJan) / (24 * 60 * 60 * 1000))
+    return Math.ceil((now.getDay() + 1 + numberOfDays) / 7)
+  }
 
-    const newBackupData = {
-        hour: (new Date()).getHours(),
-        daily: keepDaily ? getDayOfYear() : ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'][now.getDay()],
-        week: getWeekNumber(),
-        month: ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'][now.getMonth()],
-    }
-    const backupData = $gc('backupData') || {hour: null, daily: null, week: null, month: null}
+  const newBackupData = {
+    hour: (new Date()).getHours(),
+    daily: keepDaily ? getDayOfYear() : ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'][now.getDay()],
+    week: getWeekNumber(),
+    month: ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'][now.getMonth()],
+  }
+  const backupData = $gc('backupData') || {hour: null, daily: null, week: null, month: null}
 
-    const [config, backupDT] = getMirthConfig()
-    // eslint-disable-next-line no-global-assign,no-undef
-    msg = config
-    $c('backupFileName', String(backupDT).replace(/[:-]/g, '').replace(' ', 'T') + '.backup.xml')
+  const [config, backupDT] = getMirthConfig()
+  // eslint-disable-next-line no-global-assign,no-undef
+  msg = config
+  $c('backupFileName', String(backupDT).replace(/[:-]/g, '').replace(' ', 'T') + '.backup.xml')
 
-    if (backupData.hour !== newBackupData.hour) {
-        $c('hourlyFileName', ['hour_', newBackupData.hour, '_backup.xml'].join(''))
-    } else {
-        destinationSet.remove(['hourly'])
-    }
+  if (backupData.hour !== newBackupData.hour) {
+    $c('hourlyFileName', ['hour_', newBackupData.hour, '_backup.xml'].join(''))
+  } else {
+    destinationSet.remove(['hourly'])
+  }
 
-    if (backupData.daily !== newBackupData.daily) {
-        $c('dailyFileName', ['day_', newBackupData.daily, '_backup.xml'].join(''))
-    } else {
-        destinationSet.remove(['daily'])
-    }
+  if (backupData.daily !== newBackupData.daily) {
+    $c('dailyFileName', ['day_', newBackupData.daily, '_backup.xml'].join(''))
+  } else {
+    destinationSet.remove(['daily'])
+  }
 
-    if (backupData.week !== newBackupData.week) {
-        $c('weeklyFileName', ['week_', newBackupData.week, '_backup.xml'].join(''))
-    } else {
-        destinationSet.remove(['weekly'])
-    }
+  if (backupData.week !== newBackupData.week) {
+    $c('weeklyFileName', ['week_', newBackupData.week, '_backup.xml'].join(''))
+  } else {
+    destinationSet.remove(['weekly'])
+  }
 
-    if (backupData.month !== newBackupData.month) {
-        $c('monthlyFileName', ['month_', newBackupData.month, '_backup.xml'].join(''))
-    } else {
-        destinationSet.remove(['monthly'])
-    }
+  if (backupData.month !== newBackupData.month) {
+    $c('monthlyFileName', ['month_', newBackupData.month, '_backup.xml'].join(''))
+  } else {
+    destinationSet.remove(['monthly'])
+  }
 
-    $gc('backupData', newBackupData)
-    return msg
+  $gc('backupData', newBackupData)
+  return msg
 }
 
 if (typeof module === 'object') {
-    module.exports = mirthBackup
+  module.exports = {mirthBackup: mirthBackup, getMirthConfig: getMirthConfig}
 }
 
-/* global $gc, $c, destinationSet, utils, getMirthConfig */
+// this is at the bottom, so we don't break the mirth description field
+/* global com, java, $gc, $c, destinationSet, msg */
+/* exported mirthBackup, getMirthConfig */
