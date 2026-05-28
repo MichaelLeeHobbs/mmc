@@ -5,7 +5,7 @@
 [![Forks][forks-shield]][forks-url]
 [![Stargazers][stars-shield]][stars-url]
 [![Issues][issues-shield]][issues-url]
-[![Apache 2.0 License][license-shield]][license-url]
+[![MIT License][license-shield]][license-url]
 
 
 
@@ -47,6 +47,7 @@
     <li><a href="#the-mirth-helpers">The Mirth $ Helpers</a></li>
     <li><a href="#usage-examples">Usage Examples</a></li>
     <li><a href="#compatibility-notes">Compatibility Notes</a></li>
+    <li><a href="#testing">Testing</a></li>
     <li><a href="#roadmap">Roadmap</a></li>
     <li><a href="#contributing">Contributing</a></li>
     <li><a href="#license">License</a></li>
@@ -303,13 +304,40 @@ See each file's `@example` block for more.
 
 
 
+<!-- TESTING -->
+## Testing
+
+Unit tests run under [Vitest](https://vitest.dev/) in Node — even though the templates target Rhino. The trick is a
+small harness ([`test/mirthHarness.js`](test/mirthHarness.js)) that loads a template's source into a Node `vm`
+sandbox pre-seeded with mocked Mirth globals (`$c`/`$gc`/… as Map-backed functions, `logger`, and injectable
+`java`/`Packages`/`XML`), then reads back the declared globals and `module.exports`. The templates are tested
+**as-is**, with no changes to the source.
+
+```sh
+pnpm install
+pnpm test            # run once
+pnpm run test:watch  # watch mode
+```
+
+Tests currently cover the pure, dependency-light helpers — `tryCatch`, `$t`, `arrayUtils`, `validationUtils`,
+`jsonUtils`, `stringUtils`, `Encoding`, and `Document`. Heavily Java/Mirth-coupled templates (`channelUtils`,
+`mirthEventPoller`, `fetch.mirth`, `dateUtils.convertTimeZone`, …) need `java.*` mocks and are tracked as TODO.
+
+> Note: because the harness loads template source through `vm`, V8 line-coverage reports 0% — the eval'd code isn't
+> part of the instrumented module graph. The passing assertions are the signal, not the coverage number.
+
+<p align="right">(<a href="#top">back to top</a>)</p>
+
+
+
 <!-- ROADMAP -->
 ## Roadmap
 
 - [ ] Expand usage examples for each template
 - [ ] Document the `DBConnection` / `ChannelUtils` API surface
 - [ ] Document `HL7Message` rules and validation
-- [ ] Add tests for the `require()`-able ES5 modules
+- [x] Vitest harness + tests for the pure, `require()`-able helpers
+- [ ] Extend tests to the Java/Mirth-coupled templates (mock `java.*`)
 
 See the [open issues](https://github.com/MichaelLeeHobbs/mmc/issues) for the full list of proposed features and
 known issues.
@@ -342,7 +370,7 @@ Code is linted with the rules in [`.eslintrc`](.eslintrc) (single quotes, 1TBS b
 <!-- LICENSE -->
 ## License
 
-Distributed under the Apache-2.0 License. See [LICENSE](LICENSE) for more information.
+Distributed under the MIT License. See [LICENSE](LICENSE) for more information.
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 

@@ -26,7 +26,7 @@
  * })
  *
  * @author Michael L. Hobbs {@link https://github.com/MichaelLeeHobbs}
- * @licence Apache License 2.0
+ * @licence MIT
  */
 var mirthEventPoller = {}
 

@@ -2,7 +2,7 @@
  * PersistentMap extends DBConnection and is a DB backed persistent map and can be accessed from anywhere/anytime unlike most Mirth Connect maps.
  *
  * Author: Michael Lee Hobbs
- * LICENSE: GNU GENERAL PUBLIC LICENSE - https://www.gnu.org/licenses/gpl-3.0.html
+ * LICENSE: MIT
  * History:
  * - 20201226 - Initial Release
  * - 20230123 - Minor clean up

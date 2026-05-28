@@ -2,7 +2,7 @@
  * Custom CSV batch processor
  * @module mmc/customBatchProcessor
  * @author Michael L. Hobbs {@link https://github.com/MichaelLeeHobbs}
- * @license Apache-2.0
+ * @license MIT
  */
 
 /**

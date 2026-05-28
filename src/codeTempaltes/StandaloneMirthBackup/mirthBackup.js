@@ -2,7 +2,7 @@
  * Retrieves the full Mirth config as XML with the backup date set to now
  * @return {[config: string, backupDate: string]}
  * @author Michael L. Hobbs {@link https://github.com/MichaelLeeHobbs}
- * @licence Apache License 2.0
+ * @licence MIT
  */
 function getMirthConfig() {
   const SimpleDateFormat = java.text.SimpleDateFormat
@@ -49,7 +49,7 @@ function getMirthConfig() {
  *
  * @param {boolean} [keepDaily=false]
  * @author Michael L. Hobbs {@link https://github.com/MichaelLeeHobbs}
- * @licence Apache License 2.0
+ * @licence MIT
  */
 function mirthBackup(keepDaily) {
   const now = new Date()

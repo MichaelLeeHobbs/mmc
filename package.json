@@ -1,0 +1,14 @@
+{
+  "name": "mikes-mirth-code",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "coverage": "vitest run --coverage"
+  },
+  "devDependencies": {
+    "vitest": "^2",
+    "@vitest/coverage-v8": "^2"
+  }
+}

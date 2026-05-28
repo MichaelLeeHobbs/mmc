@@ -2,7 +2,7 @@
  * DBConnection is a base class designed to be extended and provide basic DB functionality in a reusable fashion.
  *
  * Author: Michael Lee Hobbs
- * LICENSE: GNU GENERAL PUBLIC LICENSE - https://www.gnu.org/licenses/gpl-3.0.html
+ * LICENSE: MIT
  * History:
  * - 20201226 - Initial Release
  * - 20210406 - PACMANO Release, the Less is MORE edition! Line count cut by %40! Simplification of code.
