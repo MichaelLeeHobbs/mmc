@@ -27,7 +27,7 @@ channelUtils.batchJson = function (noReverse) {
       return Array.isArray(messages) ? messages : [messages]
     } catch (e) {
       e.message = 'Failed to parse message!\n' + e.message
-      $gc('batchJsonError'.e.message)
+      $gc('batchJsonError', e.message)
       return [{error: e.message}]
     }
   }

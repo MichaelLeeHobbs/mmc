@@ -91,19 +91,17 @@ describe('channelUtils.batchJson', () => {
     expect(cu.batchJson(true)).toBeNull()
   })
 
-  it('on invalid JSON surfaces an error string (via two layered catch bugs)', () => {
-    // BUG CHAIN: readMessage()'s catch runs `$gc('batchJsonError'.e.message)`.
-    // `'batchJsonError'.e` is undefined, so `.message` THROWS a TypeError, which
-    // escapes readMessage and is caught by getMessages()'s OUTER catch. That outer
-    // catch stores `['', '{"error": ' + e.message + '}']` (note: NOT valid JSON —
-    // the message is unquoted). batchJson() then pops that raw string.
+  it('on invalid JSON returns a valid JSON error object string', () => {
+    // readMessage()'s catch stores the parse error via `$gc('batchJsonError', e.message)`
+    // and returns `[{error: e.message}]`. getMessages() JSON.stringifies each element, so
+    // batchJson() pops a VALID JSON string describing the failure.
     const sb = load({ reader: makeReader(['not json']) })
     const cu = sb.channelUtils
     const first = cu.batchJson()
     expect(typeof first).toBe('string')
     expect(first).toContain('"error":')
-    // It is intentionally NOT valid JSON, documenting the bug.
-    expect(() => JSON.parse(first)).toThrow()
+    const parsed = JSON.parse(first)
+    expect(parsed.error).toContain('Failed to parse message!')
   })
 })
 

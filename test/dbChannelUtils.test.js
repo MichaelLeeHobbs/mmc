@@ -147,15 +147,17 @@ describe('DB ChannelUtils._updateIndex (static, globalMap-backed)', () => {
   })
 })
 
-describe('DB ChannelUtils.getMessageByMetadata (latent bug)', () => {
-  it('throws because this.sqlRowsAsJSON is not defined on the class', () => {
+describe('DB ChannelUtils.getMessageByMetadata', () => {
+  it('returns parsed JSON rows for a postgres driver (via sqlRowsAsJSON wrapper)', () => {
     const conn = makeRecordingConnection()
     const sb = load(conn)
     const cu = new sb.ChannelUtils(config)
-    conn.__enqueue(makeResultSet('10')) // getDBID() lookup succeeds
-    // BUG: getMessageByMetadata calls `this.sqlRowsAsJSON(sql)`, but neither
-    // ChannelUtils nor DBConnection defines sqlRowsAsJSON -> TypeError.
-    expect(() => cu.getMessageByMetadata('MRN', 'M1', 'cid')).toThrow(/sqlRowsAsJSON is not a function/)
+    conn.__enqueue(makeResultSet('10')) // getDBID() lookup -> dbID 10
+    conn.__enqueue(makeResultSet('[{"foo":"bar"}]')) // main query -> JSON aggregate (column 1)
+    const result = cu.getMessageByMetadata('MRN', 'M1', 'cid')
+    expect(result).toEqual([{ foo: 'bar' }])
+    // For postgres, sqlRowsAsJSON wraps the SELECT so the driver returns rows as JSON.
+    expect(conn.__calls.query[1].sql).toContain('array_to_json(array_agg(t))')
   })
 })
 

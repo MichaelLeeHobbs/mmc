@@ -110,6 +110,21 @@ DBConnection.prototype.executeDBStatements = function (paramsArr) {
     return paramsArr.map(([statement, isQuery, paramList]) => this.executeDBStatement(statement, isQuery, paramList))
 }
 
+/**
+ * Wraps a SELECT so the driver returns its rows as a single JSON string (column 1).
+ * Returns undefined for drivers without a wrapper, in which case callers fall back to the raw SQL.
+ * @param sql - The SELECT statement to wrap.
+ * @return {string|undefined} The JSON-aggregating SQL, or undefined if the driver has no wrapper.
+ */
+DBConnection.prototype.sqlRowsAsJSON = function (sql) {
+    const wrappers = {
+        'org.postgresql.Driver': (sql) => 'select array_to_json(array_agg(t)) from (' + sql + ') as t;'
+    }
+    if (wrappers[this._config.dbClass]) {
+        return wrappers[this._config.dbClass](sql)
+    }
+}
+
 DBConnection.prototype.errorPrefix = function (func, msg, error) {
     error = error || new Error()
     error.message = [

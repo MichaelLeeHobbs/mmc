@@ -75,16 +75,13 @@ describe('PersistentMap constructor', () => {
     expect(pm._expires).toBe(30)
   })
 
-  it('throws when mapName is missing (BUG: via getErrorPrefix TypeError, not the intended message)', () => {
+  it('throws the intended message when mapName is missing', () => {
     const conn = makeRecordingConnection()
     const sb = load(conn)
     const cfg = { ...config }
     delete cfg.mapName
-    // BUG: the guard calls `this.getErrorPrefix(...)` which does NOT exist on
-    // DBConnection (the real method is `errorPrefix`). So instead of throwing
-    // "... config.mapName is undefined!", it throws a TypeError. We still get a
-    // throw, documenting the latent bug.
-    expect(() => new sb.PersistentMap(cfg)).toThrow(/getErrorPrefix is not a function/)
+    // The guard throws via `this.errorPrefix('constructor(config)', 'config.mapName is undefined!')`.
+    expect(() => new sb.PersistentMap(cfg)).toThrow(/config\.mapName is undefined!/)
   })
 })
 
@@ -233,9 +230,8 @@ describe('PersistentMap.delete / drop', () => {
     const conn = makeRecordingConnection()
     const sb = load(conn)
     const pm = new sb.PersistentMap(config)
-    // BUG: drop() references this.getErrorPrefix which is undefined on DBConnection,
-    // so the wrong-answer branch throws a TypeError (not the intended message).
-    expect(() => pm.drop().areYouSure('no')).toThrow()
+    // The wrong-answer branch throws via this.errorPrefix(...) with the intended message.
+    expect(() => pm.drop().areYouSure('no')).toThrow(/expected answer === "YES"/)
   })
 
   it('drop().areYouSure("YES") issues DROP TABLE', () => {

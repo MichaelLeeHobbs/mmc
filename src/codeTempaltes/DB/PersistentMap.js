@@ -53,7 +53,7 @@
 function PersistentMap(config) {
     DBConnection.call(this, config)
     this._expires = Number.parseInt(config.expires) || 30
-    if (!config.mapName) throw new Error(this.getErrorPrefix('constructor(config)') + ' - config.mapName is undefined!')
+    if (!config.mapName) throw this.errorPrefix('constructor(config)', 'config.mapName is undefined!')
     this._mapName = String(config.mapName)
     if (config.initialize) this.initialize()
     this.prune()
@@ -104,7 +104,7 @@ PersistentMap.prototype.addSearchColumn = function (columnName) {
 PersistentMap.prototype.drop = function () {
     return {
         areYouSure: function (answer) {
-            if (answer !== 'YES') throw new Error(this.getErrorPrefix('drop().areYouSure(answer)') + ' - expected answer === "YES" found "' + answer + '"')
+            if (answer !== 'YES') throw this.errorPrefix('drop().areYouSure(answer)', 'expected answer === "YES" found "' + answer + '"')
             this.executeDBStatement("DROP TABLE IF EXISTS " + this._mapName + ";", false)
         }.bind(this)
     }

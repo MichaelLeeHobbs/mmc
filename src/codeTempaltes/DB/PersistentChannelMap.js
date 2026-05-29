@@ -55,7 +55,7 @@ PersistentChannelMap.prototype.initialize = function () {
 PersistentChannelMap.prototype.drop = function () {
     return {
         areYouSure: function (answer) {
-            if (answer !== 'YES') throw new Error(this.getErrorPrefix('drop().areYouSure(answer)') + ' - expected answer === "YES" found "' + answer + '"')
+            if (answer !== 'YES') throw this.errorPrefix('drop().areYouSure(answer)', 'expected answer === "YES" found "' + answer + '"')
             this._indexes.forEach(index => this.executeDBStatement("DROP INDEX IF EXISTS " + index[0] + ";", false))
             this.executeDBStatement("DROP TABLE IF EXISTS persistent_channel_map;", false)
         }.bind(this)
