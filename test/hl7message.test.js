@@ -1,5 +1,5 @@
 /**
- * Thorough behavioral test suite for HL7Message.es5.js (+ Encoding.es5.js).
+ * Thorough behavioral test suite for Globals/HL7Message.js (bundled HL7Message + Encoding).
  *
  * Loaded via the vm harness. The library is realm-safe: it guards the `java`
  * reference (`typeof java !== 'undefined' && val instanceof java.lang.Object`),
@@ -20,7 +20,7 @@ import { loadTemplates } from './mirthHarness.js'
 /** Standard mocks: java for toJsPrimitive's instanceof branch. */
 function loadSandbox(extra = {}) {
   return loadTemplates(
-    ['HL7Message/Encoding.es5.js', 'HL7Message/HL7Message.es5.js'],
+    ['Globals/HL7Message.js'],
     { java: { lang: { Object: function () {} } }, ...extra },
   )
 }
@@ -309,7 +309,7 @@ describe('set: fields, components, subcomponents, reps', () => {
   })
 
   it('set works WITHOUT a java mock on array/object values (java reference is guarded)', () => {
-    const noJava = loadTemplates(['HL7Message/Encoding.es5.js', 'HL7Message/HL7Message.es5.js']).module.exports
+    const noJava = loadTemplates(['Globals/HL7Message.js']).module.exports
     const msg = new noJava(ADT, [])
     expect(() => msg.set('PID.5', ['a', 'b'])).not.toThrow()
     expect(msg.get('PID.5.1')).toBe('a')

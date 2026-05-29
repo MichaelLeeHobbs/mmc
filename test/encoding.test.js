@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import { loadTemplate } from './mirthHarness.js'
 
-// Encoding.es5.js sets module.exports = Encoding (require guard skipped under vm).
-const Encoding = loadTemplate('HL7Message/Encoding.es5.js').module.exports
+// Encoding is bundled into Globals/HL7Message.js (Encoding first) and exposed as a global.
+const Encoding = loadTemplate('Globals/HL7Message.js').Encoding
 
 describe('Encoding constructor', () => {
   it('uses HL7 default encoding chars when no options', () => {

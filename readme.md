@@ -121,12 +121,13 @@ Mirth. A small `utils` bridge exposes them all under one object (`utils.string`,
 | [`PersistentMap.js`](src/codeTempaltes/DB/PersistentMap.js) | A DB-backed map that persists across restarts and is reachable from any channel, with per-entry expiration. |
 | [`PersistentChannelMap.js`](src/codeTempaltes/DB/PersistentChannelMap.js) | Like `PersistentMap`, but scoped/keyed per channel. |
 
-### 🏥 HL7 Message — [`src/codeTempaltes/HL7Message`](src/codeTempaltes/HL7Message)
+### 🏥 HL7 Message — [`src/codeTempaltes/Globals/HL7Message.js`](src/codeTempaltes/Globals/HL7Message.js)
 
-| Template | What it does |
-| --- | --- |
-| [`HL7Message.es5.js`](src/codeTempaltes/HL7Message/HL7Message.es5.js) | An ES5 HL7 v2 message model — parse, read/modify segments and fields, validate, and re-encode. Also `require()`-able under Node for testing. |
-| [`Encoding.es5.js`](src/codeTempaltes/HL7Message/Encoding.es5.js) | Parses and represents the HL7 encoding characters (`MSH-1`/`MSH-2`) used by `HL7Message`. |
+A self-contained ES5 HL7 v2 message model in a single file: parse a message; read and modify
+segments, fields, components, subcomponents, and repetitions by path; validate against rules; diff
+two messages; build ACKs; and re-encode. The `Encoding` helper class (HL7 encoding characters,
+`MSH-1`/`MSH-2`) is bundled in the same file. Requires Mirth's `rhinoLanguageVersion` ≥ 180 (it
+uses `let` + object destructuring). Covered by 85 tests in `test/hl7message.test.js`.
 
 ### 💾 Standalone Mirth Backup — [`src/codeTempaltes/StandaloneMirthBackup`](src/codeTempaltes/StandaloneMirthBackup)
 
@@ -168,7 +169,7 @@ style that matches the file.
 
 ### Using a Code Template
 
-Most files in `Globals`, `DB`, and `HL7Message` are designed to be Code Templates:
+Most files in `Globals` and `DB` are designed to be Code Templates:
 
 1. In the Mirth Administrator, open **Channels → Code Templates** (Edit Code Templates).
 2. Create a new code template, set its **Type** to *Function*, and paste in the contents of the file.
