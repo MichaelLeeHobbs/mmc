@@ -140,6 +140,8 @@ feature("Destructuring", "array swap", "eval('var s1=1,s2=2; [s1,s2]=[s2,s1]; s1
 feature("Destructuring", "object destructuring", "eval('var o={x:5}; var {x}=o; x') === 5");
 feature("Destructuring", "nested destructuring", "eval('var {p:{q}}={p:{q:7}}; q') === 7");
 feature("Destructuring", "destructuring with defaults", "eval('var {a=9}={}; a') === 9");
+feature("Destructuring", "array param destructuring", "eval('(function([a,b]){ return a+b; })([2,3])') === 5");
+feature("Destructuring", "object param destructuring", "eval('(function({a,b}){ return a+b; })({a:2,b:3})') === 5");
 
 /* ============================ Literals/objects ============================ */
 

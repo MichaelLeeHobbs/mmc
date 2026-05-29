@@ -319,6 +319,8 @@ function buildGotchas(byVersion) {
     let: "Scoping\tlet declaration",
     objDestr: "Destructuring\tobject destructuring",
     arrDestr: "Destructuring\tarray destructuring",
+    arrParam: "Destructuring\tarray param destructuring",
+    objParam: "Destructuring\tobject param destructuring",
     const: "Scoping\tconst declaration",
     block: "Scoping\tblock scoping (let does not leak)",
     forLet: "Scoping\tfor-let per-iteration binding (closure capture)",
@@ -388,6 +390,12 @@ function buildGotchas(byVersion) {
       "destructuring does NOT. Authors targeting default Mirth must avoid `{ }` destructuring."
     );
   }
+  out.push(
+    "- **Parameter** destructuring follows the same split: " +
+    `\`function ([a, b])\` v0 ${icon(0, K.arrParam)}, v180 ${icon(180, K.arrParam)}, v200 ${icon(200, K.arrParam)}; ` +
+    `\`function ({ a, b })\` v0 ${icon(0, K.objParam)}, v180 ${icon(180, K.objParam)}, v200 ${icon(200, K.objParam)}. ` +
+    "Array param destructuring works even on default Mirth; object param destructuring needs v180+."
+  );
   out.push("");
 
   // 4. Template literals.

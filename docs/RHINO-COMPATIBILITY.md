@@ -46,6 +46,8 @@ Legend: ✅ supported / spec-correct · ⚠️ partial or non-spec behavior · �
 | object destructuring | ❌ | ✅ | ✅ | SyntaxError: missing : after property id |
 | nested destructuring | ❌ | ✅ | ✅ | SyntaxError: missing : after property id |
 | destructuring with defaults | ❌ | ❌ | ❌ | SyntaxError: missing ( before function parameters. |
+| array param destructuring | ✅ | ✅ | ✅ |  |
+| object param destructuring | ❌ | ✅ | ✅ | SyntaxError: missing : after property id |
 
 ## Literals
 
@@ -153,6 +155,7 @@ so unless your administrator raised it, the **v0 column is what you actually get
 - **Array** destructuring (`var [a,b]=[1,2]`): v0 ✅, v180 ✅, v200 ✅.
 - **Object** destructuring (`var {a}=o`): v0 ❌, v180 ✅, v200 ✅.
   - **Surprise:** at the default v0, **array** destructuring works but **object** destructuring does NOT. Authors targeting default Mirth must avoid `{ }` destructuring.
+- **Parameter** destructuring follows the same split: `function ([a, b])` v0 ✅, v180 ✅, v200 ✅; `function ({ a, b })` v0 ❌, v180 ✅, v200 ✅. Array param destructuring works even on default Mirth; object param destructuring needs v180+.
 
 ### Template literals do not interpolate
 
