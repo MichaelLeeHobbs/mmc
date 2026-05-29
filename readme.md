@@ -409,5 +409,5 @@ Project Link: [https://github.com/MichaelLeeHobbs/mmc](https://github.com/Michae
 [stars-url]: https://github.com/MichaelLeeHobbs/mmc/stargazers
 [issues-shield]: https://img.shields.io/github/issues/MichaelLeeHobbs/mmc.svg?style=for-the-badge
 [issues-url]: https://github.com/MichaelLeeHobbs/mmc/issues
-[license-shield]: https://img.shields.io/github/license/MichaelLeeHobbs/mmc.svg?style=for-the-badge
+[license-shield]: https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge
 [license-url]: https://github.com/MichaelLeeHobbs/mmc/blob/main/LICENSE
