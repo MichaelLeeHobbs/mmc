@@ -25,7 +25,10 @@ function HL7Message(hl7, rules) {
         enumerable: true
     });
     Object.defineProperty(this, 'validationIssues', {
-        get: () => this._validationIssues,
+        get: function () {
+            this.validate();
+            return this._validationIssues;
+        },
         configurable: false,
         enumerable: true
     });
@@ -88,12 +91,12 @@ HL7Message.toJsPrimitive = function (val) {
                 break;
         }
     }
-    if (val instanceof java.lang.Object) {
+    if (typeof java !== 'undefined' && val instanceof java.lang.Object) {
         return val.toString(); // Fallback for other Java objects
     }
 
     // 3. Handle Plain JavaScript Objects (recursive conversion for properties)
-    if (valType === 'object' && !Array.isArray(val) && Object.getPrototypeOf(val) === Object.prototype) {
+    if (HL7Message.isPOJO(val)) {
         const result = {};
         Object.keys(val).forEach(key => {
             if (Object.prototype.hasOwnProperty.call(val, key)) {
@@ -257,7 +260,19 @@ HL7Message.assert = function (predicate, msg) {
  * @param {*} arg
  * @return {boolean}
  */
-HL7Message.isPOJO = (arg) => arg != null && typeof arg === 'object' && Object.getPrototypeOf(arg) === Object.prototype;
+HL7Message.isPOJO = (arg) => {
+    if (arg == null || typeof arg !== 'object' || Array.isArray(arg)) return false;
+    if (typeof arg.getClass === 'function') return false; // Java object, not a POJO
+    const proto = Object.getPrototypeOf(arg);
+    return proto === null || proto === Object.prototype || (proto.constructor && proto.constructor.name === 'Object');
+};
+
+/**
+ * Check if a value is a RegExp in a realm-safe way (instanceof fails across realms).
+ * @param {*} v
+ * @return {boolean}
+ */
+HL7Message.isRegExp = (v) => Object.prototype.toString.call(v) === '[object RegExp]';
 
 
 /**
@@ -719,7 +734,7 @@ HL7Message.prototype.findInSegment = function (searchPath, searchValue, returnPa
         const searchFieldValue = HL7Message._try(() => segment[searchField][searchFieldIdx][searchComp][searchSub], '');
         if (searchValue.test(searchFieldValue)) {
             let returnFieldValue = HL7Message._try(() => segment[returnField][returnFieldIdx][returnComp][returnSub], '');
-            if (extractor instanceof RegExp) {
+            if (HL7Message.isRegExp(extractor)) {
                 const match = extractor.exec(returnFieldValue);
                 if (match) {
                     acc.push(match[1] || match[0]); // Use match[1] if available, otherwise match[0]
@@ -924,7 +939,7 @@ HL7Message.prototype.addRulesIsRequired = function (rules) {
  */
 HL7Message.prototype.addRuleMatches = function (path, regex, errorText) {
     HL7Message.assert(path, 'path is required')
-    HL7Message.assert(regex instanceof RegExp, 'regex must be a regular expression')
+    HL7Message.assert(HL7Message.isRegExp(regex), 'regex must be a regular expression')
 
     this.addRule((message) => {
         const value = message.get(path);

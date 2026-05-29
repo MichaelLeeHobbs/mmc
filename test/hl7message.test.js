@@ -1,22 +1,17 @@
 /**
  * Thorough behavioral test suite for HL7Message.es5.js (+ Encoding.es5.js).
  *
- * Loaded via the vm harness. Two cross-realm quirks of running Rhino "code
- * template" sources inside Node's `vm` shape how some tests are written:
+ * Loaded via the vm harness. The library is realm-safe: it guards the `java`
+ * reference (`typeof java !== 'undefined' && val instanceof java.lang.Object`),
+ * uses a realm-agnostic POJO check (`HL7Message.isPOJO`), and duck-types RegExps
+ * (`HL7Message.isRegExp`) instead of `instanceof RegExp`. As a result:
  *
- *  1. `HL7Message.toJsPrimitive` does `if (val instanceof java.lang.Object)`.
- *     Outside Mirth `java` is undefined, so passing ANY array/plain-object value
- *     to `set()` (which calls toJsPrimitive) throws ReferenceError unless a `java`
- *     mock is injected. We inject `java: { lang: { Object: function () {} } }`.
+ *  - Plain objects/arrays created in the test (Node) realm pass `toJsPrimitive`
+ *    and `set()` correctly (no `java` mock required, no "[object Object]" fallback).
+ *  - RegExps created in the test realm work for addRuleMatches / findInSegment.
  *
- *  2. `instanceof` checks (`regex instanceof RegExp`, `extractor instanceof RegExp`,
- *     and the POJO-recursion branch `getPrototypeOf(val) === Object.prototype`) are
- *     realm-sensitive. A RegExp/Object literal created in the test (Node) realm is
- *     NOT `instanceof` the sandbox realm's RegExp/Object. So:
- *       - For addRuleMatches / findInSegment-extractor we build RegExps INSIDE the
- *         sandbox realm via `makeRe`.
- *       - A plain object passed to set()/toJsPrimitive from the test realm fails the
- *         POJO check and is stringified to "[object Object]" (asserted as observed).
+ * We still inject a `java` mock in `loadSandbox` to mirror the Mirth runtime, but
+ * the library no longer requires it. (See the "without java mock" test.)
  */
 import { describe, it, expect, beforeEach } from 'vitest'
 import vm from 'node:vm'
@@ -113,8 +108,8 @@ describe('parse() and statics', () => {
   })
 
   it('isPOJO / isStrNum / isPositiveInteger helpers', () => {
-    // isPOJO checks getPrototypeOf === Object.prototype, which is realm-sensitive;
-    // build the object inside the sandbox realm so the prototype matches.
+    // isPOJO is now realm-agnostic: a plain object from the test realm passes too.
+    expect(HL7Message.isPOJO({ a: 1 })).toBe(true)
     const sandboxObj = vm.runInContext('({a:1})', sandbox)
     expect(HL7Message.isPOJO(sandboxObj)).toBe(true)
     expect(HL7Message.isPOJO([])).toBe(false)
@@ -154,18 +149,17 @@ describe('toJsPrimitive', () => {
     expect(HL7Message.toJsPrimitive(javaInt)).toBe(42)
   })
 
-  it('falls back to toString() via the java.lang.Object branch for unknown getClass types', () => {
-    // No getClass match -> reaches `val instanceof java.lang.Object`. With the java
-    // mock being `function(){}`, the object is NOT an instance, so it falls through
-    // to the (cross-realm) POJO check which also fails -> final toString() fallback.
+  it('falls back to toString() for unknown getClass (Java) types', () => {
+    // No getClass match. Because the value has a getClass() method, isPOJO treats it
+    // as a Java object (not a POJO), so the recursion branch is skipped and the final
+    // toString() fallback runs.
     const unknown = { getClass: () => ({ getName: () => 'com.foo.Bar' }), toString: () => 'BAR' }
     expect(HL7Message.toJsPrimitive(unknown)).toBe('BAR')
   })
 
-  it('QUIRK: a plain object from the test realm fails the cross-realm POJO check and stringifies', () => {
-    // Object.getPrototypeOf(val) === Object.prototype is false across vm realms,
-    // so the recursion branch is skipped and toString() yields "[object Object]".
-    expect(HL7Message.toJsPrimitive({ a: 1 })).toBe('[object Object]')
+  it('recurses through a plain object regardless of realm', () => {
+    // isPOJO is realm-agnostic, so a test-realm object recurses into a plain object.
+    expect(HL7Message.toJsPrimitive({ a: 1 })).toEqual({ a: 1 })
   })
 })
 
@@ -306,18 +300,21 @@ describe('set: fields, components, subcomponents, reps', () => {
     expect(m.logs.some(l => l.msg === 'set')).toBe(true)
   })
 
-  it('QUIRK: a plain object value from the test realm is stringified to "[object Object]"', () => {
-    // Cross-realm POJO check fails in toJsPrimitive, so the object never spreads
-    // into components. Documented behavior, not necessarily intended.
+  it('a plain object value spreads into components (1-based keys)', () => {
+    // isPOJO is realm-agnostic now, so the object recurses and spreads into
+    // components instead of being stringified to "[object Object]".
     m.set('PID.3', { 1: 'A', 2: 'B' })
-    expect(m.get('PID.3.1')).toBe('[object Object]')
+    expect(m.get('PID.3.1')).toBe('A')
+    expect(m.get('PID.3.2')).toBe('B')
   })
 
-  it('set without java mock throws ReferenceError on array/object values', () => {
+  it('set works WITHOUT a java mock on array/object values (java reference is guarded)', () => {
     const noJava = loadTemplates(['HL7Message/Encoding.es5.js', 'HL7Message/HL7Message.es5.js']).module.exports
     const msg = new noJava(ADT, [])
-    expect(() => msg.set('PID.5', ['a', 'b'])).toThrow(/java is not defined/)
-    // ...but a plain string set still works without java (primitive short-circuit).
+    expect(() => msg.set('PID.5', ['a', 'b'])).not.toThrow()
+    expect(msg.get('PID.5.1')).toBe('a')
+    expect(msg.get('PID.5.2')).toBe('b')
+    // a plain string set also works without java (primitive short-circuit).
     expect(() => msg.set('PID.5.1', 'ok')).not.toThrow()
     expect(msg.get('PID.5.1')).toBe('ok')
   })
@@ -478,8 +475,8 @@ describe('validation', () => {
   it('addRules adds multiple rules', () => {
     const m = new HL7Message(ADT, [])
     m.addRules([() => true, () => 'bad'])
-    // NOTE: the validationIssues getter does NOT run validate(); only isValid does.
-    expect(m.validate()).toContain('bad')
+    // The validationIssues getter now runs validate() on read.
+    expect(m.validationIssues).toContain('bad')
   })
 
   it('addRuleIsRequired passes when present, fails when missing', () => {
@@ -543,13 +540,12 @@ describe('validation', () => {
     expect(m.validationIssues).toEqual(['x'])
   })
 
-  it('QUIRK: validationIssues getter does NOT run validation; isValid does', () => {
+  it('validationIssues getter runs validation on read (like isValid)', () => {
     const m = new HL7Message(ADT, [() => 'x'])
-    // reading validationIssues before any validate()/isValid call: still []
-    expect(m.validationIssues).toEqual([])
-    // isValid getter triggers validate()
-    expect(m.isValid).toBe(false)
+    // reading validationIssues now triggers validate() itself; no explicit call needed.
     expect(m.validationIssues).toEqual(['x'])
+    // and isValid agrees
+    expect(m.isValid).toBe(false)
   })
 })
 
