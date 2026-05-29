@@ -361,9 +361,12 @@ pnpm test            # run once
 pnpm run test:watch  # watch mode
 ```
 
-Tests currently cover the pure, dependency-light helpers — `tryCatch`, `$t`, `arrayUtils`, `validationUtils`,
-`jsonUtils`, `stringUtils`, `Encoding`, and `Document`. Heavily Java/Mirth-coupled templates (`channelUtils`,
-`mirthEventPoller`, `fetch.mirth`, `dateUtils.convertTimeZone`, …) need `java.*` mocks and are tracked as TODO.
+Tests cover **~all of the Globals plus `Document`, `HL7Message`, `Encoding`, and `DB/*`** (~420 assertions). The
+Java/Mirth-coupled templates are exercised by mocking the relevant surface via the harness: `fetch.mirth` (a fake
+Apache HttpClient chain), `channelUtils` / `mirthEventPoller` (Mirth controllers + maps), `pdfUtils` (iText),
+`dateUtils` (`java.time`), `errorUtils` (`java.io`), and `DB/*` (a fake `DatabaseConnectionFactory`). A few deep
+Java passthroughs (e.g. `convertTimeZone`'s real timezone engine, `channelUtils.getSourceMsg`) are `it.skip`'d with
+reasons rather than mocked into meaninglessness.
 
 > Note: because the harness loads template source through `vm`, V8 line-coverage reports 0% — the eval'd code isn't
 > part of the instrumented module graph. The passing assertions are the signal, not the coverage number.
@@ -379,7 +382,8 @@ Tests currently cover the pure, dependency-light helpers — `tryCatch`, `$t`, `
 - [ ] Document the `DBConnection` / `ChannelUtils` API surface
 - [x] Document `HL7Message` rules and validation
 - [x] Vitest harness + tests for the pure, `require()`-able helpers
-- [ ] Extend tests to the Java/Mirth-coupled templates (mock `java.*`)
+- [x] Vitest harness can mock the Java/Mirth surface — proven on `HL7Message` (`java`), `Document` (`createSegment`), and `stringUtils` (`java.util.Base64`)
+- [x] Add tests for the remaining templates: `channelUtils`, `mirthEventPoller`, `fetch.mirth`, `dateUtils`, `errorUtils`, `hl7Utils`, `pdfUtils`, `assert`, `utils`, `$retry`/`$sleep`, `required`, `StandaloneMirthBackup`, and `DB/*` (~420 assertions; a few deep Java passthroughs `it.skip`'d with reasons)
 - [ ] Fix mutation issues — `HL7Message.get(path, false)` (and similar) return a **live reference** into the message, so mutating the result mutates the message. Return clones instead. (Deferred: touches several call sites.)
 - [ ] **(breaking)** Make `Template` per-line transformers 0-based to match `getLine`/`setLine` — currently 1-based (`_transformers[i + 1]`). Consumers that key transformers 1-based (e.g. the prod radiology report header) must be updated in lockstep.
 - [ ] **(breaking)** Fix `Page` min-line padding off-by-one so pages reach `minLines` instead of `minLines - 1` — changes rendered page line counts (e.g. prod report pages would go 48 → 49 lines/page).
