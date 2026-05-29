@@ -15,20 +15,20 @@ keeps the list short and fixable.
 
 ## Scan
 
-| | |
-| --- | --- |
-| **Target** | `<image:tag or repo/component>` |
-| **Scanner** | `<tool + version>` <!-- e.g. Docker Scout 1.x --> |
-| **Date** | `<YYYY-MM-DD>` |
-| **Filter** | `<e.g. severity ≥ High; base-image vulns excluded; fixed only>` |
+|             |                                                                 |
+|-------------|-----------------------------------------------------------------|
+| **Target**  | `<image:tag or repo/component>`                                 |
+| **Scanner** | `<tool + version>` <!-- e.g. Docker Scout 1.x -->               |
+| **Date**    | `<YYYY-MM-DD>`                                                  |
+| **Filter**  | `<e.g. severity ≥ High; base-image vulns excluded; fixed only>` |
 
 **Totals:** 🔴 Critical `0` · 🟠 High `0` · 🟡 Medium `0` · ⚪ Low `0` — **fix available for `0/0`**
 
 ## Findings
 
-| CVE | Sev | CVSS | Package | Installed | Fixed in | Exploit |
-| --- | --- | --- | --- | --- | --- | --- |
-| [CVE-0000-00000](https://nvd.nist.gov/vuln/detail/CVE-0000-00000) | 🔴 | 0.0 | `pkg` | `0.0.0` | `0.0.0` | |
+| CVE                                                               | Sev | CVSS | Package | Installed | Fixed in | Exploit |
+|-------------------------------------------------------------------|-----|------|---------|-----------|----------|---------|
+| [CVE-0000-00000](https://nvd.nist.gov/vuln/detail/CVE-0000-00000) | 🔴  | 0.0  | `pkg`   | `0.0.0`   | `0.0.0`  |         |
 
 <!--
 Sev: 🔴 Critical · 🟠 High · 🟡 Medium · ⚪ Low
