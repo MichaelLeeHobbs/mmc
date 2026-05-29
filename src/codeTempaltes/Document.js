@@ -291,7 +291,10 @@ AdvanceString.encodings = {
  * @param {string[]} [lines=[]] - The lines of the template (default: []).
  * @param {object} [options={}] - Options for the Template.
  * @param {number} [options.maxLineLength=80] - The maximum line length (default: 80).
- * @param {string[]} [options.transformers=[]] - The transformers to apply to each line (default: []).
+ * @param {Object.<number,string[]>} [options.transformers={}] - Per-line transformer lists, keyed
+ *   **1-based** (line 1 => key 1, e.g. `{1: ['center', 'toUpperCase']}` transforms the first line).
+ *   NOTE: this 1-based keying is inconsistent with the 0-based `getLine`/`setLine`; it's a known quirk
+ *   kept for back-compat (see the Roadmap). Don't change it without updating consumers in lockstep.
  * @param {string[]} [options.globalTransformer=[]] - The transformers to apply globally (default: []).
  * @returns {Template} A new Template instance.
  */
@@ -335,8 +338,12 @@ Template.prototype.getLineTransformers = function (n) {
 }
 
 /**
- * Sets the transformers for the line at the specified index.
- * @param {number} n - The index of the line.
+ * Sets the transformers for a line.
+ * NOTE: per-line transformers are applied **1-based** at render time (line `i`, 0-based, uses
+ * `transformers[i + 1]`) — inconsistent with the 0-based `getLine`/`setLine`. This is a known quirk
+ * kept for back-compat; don't "fix" it without updating consumers (e.g. the prod radiology report
+ * keys transformers 1-based). See the Roadmap.
+ * @param {number} n - The 1-based line position (line 1 => n = 1).
  * @param {string[]} transformers - The transformers to apply to the line.
  */
 Template.prototype.setLineTransformers = function (n, transformers) {

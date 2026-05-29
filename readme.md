@@ -381,6 +381,8 @@ Tests currently cover the pure, dependency-light helpers — `tryCatch`, `$t`, `
 - [x] Vitest harness + tests for the pure, `require()`-able helpers
 - [ ] Extend tests to the Java/Mirth-coupled templates (mock `java.*`)
 - [ ] Fix mutation issues — `HL7Message.get(path, false)` (and similar) return a **live reference** into the message, so mutating the result mutates the message. Return clones instead. (Deferred: touches several call sites.)
+- [ ] **(breaking)** Make `Template` per-line transformers 0-based to match `getLine`/`setLine` — currently 1-based (`_transformers[i + 1]`). Consumers that key transformers 1-based (e.g. the prod radiology report header) must be updated in lockstep.
+- [ ] **(breaking)** Fix `Page` min-line padding off-by-one so pages reach `minLines` instead of `minLines - 1` — changes rendered page line counts (e.g. prod report pages would go 48 → 49 lines/page).
 
 See the [open issues](https://github.com/MichaelLeeHobbs/mmc/issues) for the full list of proposed features and
 known issues.
