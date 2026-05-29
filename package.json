@@ -5,7 +5,8 @@
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",
-    "coverage": "vitest run --coverage"
+    "coverage": "vitest run --coverage",
+    "rhino:compat": "node scripts/rhino-compat.mjs"
   },
   "devDependencies": {
     "vitest": "^2",

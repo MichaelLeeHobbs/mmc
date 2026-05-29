@@ -37,3 +37,6 @@ dicom/**
 /dist/
 /out/
 /.parcel-cache/
+
+# vendored Mirth rhino jar (extracted at runtime by scripts/rhino-compat.mjs)
+scripts/rhino/.cache/
