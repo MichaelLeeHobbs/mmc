@@ -1,49 +1,76 @@
 /**
- * A Rhino/Mirth Connect partial implementation of Javascript Fetch. If the Javascript Map Type is not available then only raw headers will be available.
- * The Map type can be polyfilled at your own risk.
+ * fetch - a synchronous, partial implementation of the WHATWG Fetch API for
+ * Rhino / Mirth Connect, built on the Apache HttpClient classes
+ * (`Packages.org.apache.http.*`) bundled with Mirth.
+ *
+ * SYNCHRONOUS: Mirth's Rhino engine has no event loop or Promises, so `fetch(...)`
+ * returns a {@link FetchResponse} directly (not a Promise), and the body readers
+ * (`json()`, `text()`, `xml()`, `byteArray()`) return their value directly. A
+ * `.then()` / `.catch()` shim is provided so promise-style chaining reads
+ * naturally, but it runs synchronously too.
+ *
+ * "Partial" - it covers the common request/response surface and omits the parts
+ * that don't apply to a blocking, server-side HTTP client:
+ *   Supported:     url, method (GET / POST / PUT / DELETE), request headers, a
+ *                  string body, redirect follow on/off, response
+ *                  status/ok/statusText/headers, and body readers
+ *                  json() / text() / xml() / byteArray().
+ *   Not supported: Promises/async; a `Request` or full `Headers` class;
+ *                  AbortController / `signal`; `credentials` / `mode` (CORS) /
+ *                  `cache` / `referrer` / `integrity` / `keepalive`; non-string or
+ *                  streaming bodies (FormData / URLSearchParams / Blob /
+ *                  ArrayBuffer - stringify yourself and set Content-Type
+ *                  yourself); response `blob()` / `formData()` / `arrayBuffer()` /
+ *                  `clone()` / `body`; PATCH / HEAD / OPTIONS; and the
+ *                  'manual' / 'error' redirect modes. `response.type` is always
+ *                  'default'.
+ *
+ * Errors: like standard fetch, an HTTP error status (4xx/5xx) does NOT throw -
+ * inspect `response.ok` / `response.status`. Network, connection, and TLS
+ * failures DO throw, so wrap calls in try/catch (or the repo's `tryCatch` /
+ * `$retry`). The body can be read ONCE; a second body call throws
+ * "Body already used!".
+ *
+ * Headers: `response.headers` is a JS `Map` when the Rhino build provides `Map`
+ * (Mirth 4.0+, maybe 3.12); `response.rawHeaders` (an array of `[name, value]`
+ * pairs) is always available as a fallback.
+ *
+ * Non-standard extensions for healthcare integrations: `ignoreSSLError` (trust any
+ * server cert) and `clientCert` (mutual TLS). See
+ * src/Examples/fetch.examples.js for many more usage examples.
  *
  * @example
- * // Get XML example
- * const response = fetch('https://www.w3schools.com/xml/note.xml')
- * const props = {
- *  // this only works on the newest version of mirth 4.0 and maybe 3.12
- *    headers: Array.from(response.headers.entries()),
- *    ok: response.ok,
- *    redirected: response.redirected,
- *    status: response.status,
- *    statusText: response.statusText,
- *    type: response.type,
- *    url: response.url,
- * }
- * msg = response.xml()
+ * // GET JSON, with an error check
+ * const res = fetch('https://example.com/api/patients/123')
+ * if (!res.ok) { throw new Error('HTTP ' + res.status + ' ' + res.statusText) }
+ * const patient = res.json()
  *
- * // Get JSON Example
- * const response = fetch('https://filesamples.com/samples/code/json/sample2.json')
- * msg = response.json()
+ * @example
+ * // GET XML / HL7 straight into the Mirth message (E4X)
+ * msg = fetch('https://example.com/feed.xml').xml()
  *
- * // Get Text Example
- * const response = fetch('https://file-examples.com/wp-content/uploads/2017/02/file_example_CSV_5000.csv')
- * msg = response.text()
+ * @example
+ * // POST JSON - note: `body` and `headers` are SEPARATE top-level options
+ * const res = fetch('https://example.com/api/orders', {
+ *   method: 'POST',
+ *   headers: {'Content-Type': 'application/json', Authorization: 'Bearer ' + token},
+ *   body: JSON.stringify({mrn: '12345', test: 'CBC'}),
+ * })
+ * const created = res.json()
  *
- * // Post JSON Example
- * const response = fetch('https://postman-echo.com/post',
- *  {method: 'POST', headers: {'Content-Type': 'application/json', body: JSON.stringify({message: 'test!'})}}
- * )
- * msg = response.json()
+ * @example
+ * // Mutual TLS (mTLS)
+ * const res = fetch('https://secure.example.com/api', {
+ *   clientCert: {path: '/opt/mirth/certs/client.p12', password: 'changeit'},
+ * })
  *
- * // Mutual TLS (mTLS) Example
- * const response = fetch('https://secure.example.com/api',
- *  {clientCert: {path: '/opt/mirth/certs/client.p12', password: 'changeit'}}
- * )
- * msg = response.json()
- *
- * @param {string} url
+ * @param {string} url The request URL.
  * @param {object} [options]
- * @param {string} [options.method='GET'] GET/POST/PUT/DELETE
- * @param {object} [options.headers={}] Dictionary of request headers.
- * @param {string} [options.body] Request body
- * @param {string} [options.redirect='follow'] If not follow redirects will be ignored
- * @param {boolean} [options.ignoreSSLError=false] If true will ignore all SSL errors. Useful for connecting to self-signed certs.
+ * @param {('GET'|'POST'|'PUT'|'DELETE')} [options.method='GET'] HTTP method. A GET must not carry a body (throws if it does).
+ * @param {object|[string,string][]} [options.headers={}] Request headers, as a `{name: value}` object or an array of `[name, value]` pairs. Nothing is inferred - set `Content-Type` yourself when sending a body.
+ * @param {string} [options.body] Request body - a STRING only. `JSON.stringify(...)` objects yourself; build form bodies (`a=1&b=2`) yourself.
+ * @param {('follow'|string)} [options.redirect='follow'] 'follow' follows redirects (lax); any other value disables redirect handling.
+ * @param {boolean} [options.ignoreSSLError=false] Non-standard. Trust ANY server certificate and skip hostname verification. Use only for self-signed dev endpoints.
  * @param {object} [options.clientCert] Client certificate for mutual TLS (mTLS). The keystore must contain both the client certificate and its private key.
  * @param {string} options.clientCert.path Filesystem path (on the Mirth server) to the keystore file (PKCS12 .p12/.pfx or JKS .jks).
  * @param {string} [options.clientCert.password] Password used to unlock the keystore.
@@ -66,10 +93,11 @@ function fetch(url, options) {
      * @property {string} statusText The status message corresponding to the status code. (e.g., OK for 200).
      * @property {string} type The type of the response (e.g., basic, cors).
      * @property {string} url The URL of the response.
-     * @property {function} byteArray Returns a Java ByteArray of the body.
-     * @property {function} json Returns the body parsed as JSON.
-     * @property {function} text Returns the body parsed as text.
-     * @property {function} xml Returns the body parsed as Mirth/Rhino XML.
+     * @property {function} byteArray Reads the body once and returns it as a Java `byte[]` (for binary downloads). Synchronous; throws if the body was already read.
+     * @property {function} json Reads the body once and returns it parsed as JSON (synchronous - not a Promise).
+     * @property {function} text Reads the body once and returns it as a UTF-8 string.
+     * @property {function} xml Reads the body once and returns it as a Mirth/Rhino E4X XML object.
+     * @property {function} then Synchronous promise-style shim: `then(onFulfilled)` calls `onFulfilled(response)` immediately and returns its result (with a chained `.catch`).
      */
     function FetchResponse(body, options) {
         body = body || null

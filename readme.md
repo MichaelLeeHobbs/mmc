@@ -150,6 +150,10 @@ Importable channel XML, including [`StandaloneMirthBackup.xml`](src/channels/Sta
 
 - [`customBatchProcessor.js`](src/Examples/customBatchProcessor.js) — a custom CSV batch processor that treats the
   first row as headers and emits each subsequent row as a JSON object.
+- [`fetch.examples.js`](src/Examples/fetch.examples.js) — 17 `fetch` recipes: GET JSON/XML/text, binary
+  download → attachment, POST JSON/form, Bearer/Basic auth, query params, PUT/DELETE, error-status vs
+  network-error handling, reading response headers, self-signed certs, mutual TLS, disabling redirects, and a
+  retry + `tryCatch` pattern.
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
