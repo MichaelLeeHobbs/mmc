@@ -1,0 +1,48 @@
+name: 🐛 Bug report
+description: Report something that's broken or behaving incorrectly.
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report! Fill in what you can — a small reproducible example helps the most.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect, and what actually happened?
+      placeholder: "Calling fetch(...) returned X, but I expected Y."
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: A minimal snippet or steps — channel script, code template, and a sample input message if relevant.
+      render: javascript
+    validations:
+      required: true
+  - type: input
+    id: template
+    attributes:
+      label: Affected code template / file
+      placeholder: "e.g. Globals/HL7Message.js, Globals/fetch.mirth.js"
+  - type: input
+    id: mirth-version
+    attributes:
+      label: Mirth / NextGen Connect version
+      placeholder: "e.g. 4.5.2 (and rhinoLanguageVersion, if known)"
+  - type: textarea
+    id: logs
+    attributes:
+      label: Errors / logs
+      description: Any error message or relevant Mirth server log output.
+      render: shell
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched existing issues and didn't find a duplicate.
+          required: true
