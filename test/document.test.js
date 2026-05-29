@@ -147,17 +147,11 @@ describe('AdvanceString', () => {
       expect(s.splitOnLineCount(10)).toEqual(['a\nb'])
     })
 
-    it('throws on a negative line count', () => {
+    it('throws on a line count less than 1 (negative or zero)', () => {
       const s = new AdvanceString('a\nb', { crlf: '\n' })
-      expect(() => s.splitOnLineCount(-1)).toThrow('Cannot split on negative line count!')
-    })
-
-    // BUG: splitOnLineCount(0) does `arr.splice(0,0)` forever, producing an
-    // ever-growing result array until "RangeError: Invalid array length".
-    // The class only guards against negative n, not zero.
-    it('throws RangeError on a zero line count (off-by quirk, not the friendly error)', () => {
-      const s = new AdvanceString('a\nb', { crlf: '\n' })
-      expect(() => s.splitOnLineCount(0)).toThrow('Invalid array length')
+      expect(() => s.splitOnLineCount(-1)).toThrow('Cannot split on a line count less than 1!')
+      // n=0 used to splice(0,0) forever (RangeError); now it's a clean, fast throw.
+      expect(() => s.splitOnLineCount(0)).toThrow('Cannot split on a line count less than 1!')
     })
   })
 

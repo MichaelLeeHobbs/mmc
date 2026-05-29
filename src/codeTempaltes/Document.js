@@ -143,8 +143,9 @@ AdvanceString.prototype.toArray = function () {
  * @throws {Error} If the line count is negative.
  */
 AdvanceString.prototype.splitOnLineCount = function (n) {
-  if (n < 0) {
-    throw new Error('Cannot split on negative line count!')
+  if (n < 1) {
+    // n < 1 (incl. 0) is invalid: chunk(arr, 0) would splice(0,0) forever.
+    throw new Error('Cannot split on a line count less than 1!')
   }
 
   function chunk(arr, size) {
