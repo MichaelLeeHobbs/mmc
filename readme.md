@@ -121,6 +121,10 @@ Mirth. A small `utils` bridge exposes them all under one object (`utils.string`,
 | [`PersistentMap.js`](src/codeTempaltes/DB/PersistentMap.js) | A DB-backed map that persists across restarts and is reachable from any channel, with per-entry expiration. |
 | [`PersistentChannelMap.js`](src/codeTempaltes/DB/PersistentChannelMap.js) | Like `PersistentMap`, but scoped/keyed per channel. |
 
+📖 **Full API + examples: [docs/DBConnection.md](docs/DBConnection.md)** — config, connection
+caching, statement execution, the Mirth-DB helpers on `ChannelUtils`, the persistent-map CRUD
+surface, error handling, and gotchas (every example verified against the live code).
+
 ### 🏥 HL7 Message — [`src/codeTempaltes/Globals/HL7Message.js`](src/codeTempaltes/Globals/HL7Message.js)
 
 A self-contained ES5 HL7 v2 message model in a single file: parse a message; read and modify
@@ -236,7 +240,11 @@ The full set of expected runtime globals (`msg`, `connectorMessage`, `channelId`
 <!-- USAGE EXAMPLES -->
 ## Usage Examples
 
-**HTTP request with `fetch()`** — including mutual TLS:
+A representative, copy-pasteable snippet for each template family. Every example is verified against
+the live code through the [test suite](#testing); the dedicated API docs
+([HL7Message](docs/HL7Message.md), [DBConnection/ChannelUtils](docs/DBConnection.md)) go deeper.
+
+### HTTP — `fetch()`
 
 ```javascript
 // Simple GET
@@ -255,46 +263,160 @@ var secure = fetch('https://secure.example.com/api', {
 }).json();
 ```
 
-**Retry a flaky call with backoff:**
+> 17 more recipes (auth, query params, binary download, headers, redirects, retry) in
+> [`src/Examples/fetch.examples.js`](src/Examples/fetch.examples.js).
+
+### Resilience — `$retry`, `tryCatch`, `$t`, `$sleep`
 
 ```javascript
+// Retry a flaky call with backoff
 var result = $retry(function () {
   return fetch('https://example.com/sometimes-down').json();
 }, {retries: 3, backoff: 2000, throwOnFail: true});
+
+// Go-style result tuple — forces you to handle the failure path up front.
+// (Array destructuring works in Mirth's Rhino at every language version.)
+var pair = tryCatch(function () { return fetch('https://example.com/api').json(); });
+var data = pair[0], error = pair[1];
+if (error) { logger.error('fetch failed: ' + error); return; }
+
+// $t — inline optional-chaining stand-in (Rhino has no `?.`). Returns undefined on throw.
+var city = $t(function () { return order.patient.address.city; });
+
+$sleep(250); // block this thread for 250ms
 ```
 
-**Handle errors explicitly with `tryCatch`** (forces you to deal with the failure path up front, instead of letting an exception escape):
+### Strings & reports — `stringUtils`
 
 ```javascript
-// Array destructuring works in Mirth's Rhino (verified on 1.7.13).
-const [data, error] = tryCatch(function () { return fetch('https://example.com/api').json(); });
-if (error) {
-  logger.error('fetch failed: ' + error);
-  return; // handle and bail
-}
-// data is safe to use here
+stringUtils.wrapText('the quick brown fox', 10);   // ['the quick', 'brown fox']
+stringUtils.btoa('Hello');                          // 'SGVsbG8='  (and atob() to decode)
+
+// Split a radiology-style report into impression + findings
+var parts = stringUtils.splitFindingsAndImpression(reportText);
+var impression = parts[0], findings = parts[1];
+
+// Strip lines containing any sensitive token
+stringUtils.filterLinesContaining(reportText, ['SSN', 'MRN']);
 ```
 
-**Fail fast if a dependency is missing (in a Deploy or Preprocessor script):**
+### Dates — `dateUtils`
 
 ```javascript
+dateUtils.hl7ToIso('20260206143045-0800');   // '2026-02-06T22:30:45.000Z'
+dateUtils.isoToHl7('2026-02-06T22:30:45.000Z'); // '20260206223045+0000'
+dateUtils.getAge('19850315');                 // age in years from a YYYYMMDD DOB
+
+// Convert between IANA zones (returns HL7 datetime + offset). 3-arg = from -> to.
+dateUtils.convertTimeZone('20260206143045', 'America/New_York', 'America/Los_Angeles');
+
+// A per-message stopwatch backed by the channel map ($c)
+var timer = new dateUtils.Timer();      // logs a 'start' event
+timer.markTime('after-db-lookup');      // append an event with a ms diff
+logger.info(timer.toString());
+```
+
+### Arrays, JSON & validation
+
+```javascript
+arrayUtils.fromArrayList(someJavaList);       // Java List/ArrayList -> JS array
+arrayUtils.toObject(['a', 'b', 'c']);         // { 1: 'a', 2: 'b', 3: 'c' }  (1-based)
+
+jsonUtils.stringify(objWithCycles);           // circular-safe (marks '[Circular Reference]')
+jsonUtils.stringifyCircular(obj, 2);          // pretty, drops cycles instead of throwing
+
+validationUtils.parseInt('100', {min: 5, max: 10}); // 10  (clamped)
+validationUtils.parseInt('abc', {default: 99});      // 99  (NaN -> default)
+```
+
+### Errors & assertions — `errorUtils`, `assert`
+
+```javascript
+logger.error(errorUtils.toString(e));         // message + stack, across JS *and* Java errors
+var merged = errorUtils.combine(err1, err2);  // one Error: 'Error 1: ...\nError 2: ...'
+
+assert(msg['PID']['PID.3']['PID.3.1'].toString(), 'MRN is required');
+assert.array([
+  [patientId, 'patient id missing'],
+  [function () { return order.total > 0; }, 'order total must be positive']
+]); // throws a combined message listing every failed condition
+```
+
+### HL7 v2 — `hl7Utils`
+
+```javascript
+hl7Utils.fixLineBreaks(rawHl7);   // repair stray unescaped CR/LF inside field values
+hl7Utils.fromXml(msg);            // Mirth E4X XML -> encoded HL7 v2 string
+```
+
+> For full parse/read/write/validate/diff/ACK, use the **`HL7Message`** model —
+> see **[docs/HL7Message.md](docs/HL7Message.md)**.
+
+### PDF — `pdfUtils`
+
+```javascript
+// Pull text out of a PDF byte array (Mirth's bundled iText)
+var text = pdfUtils.extractText(attachmentBytes);
+```
+
+### Channel infrastructure — `channelUtils`
+
+```javascript
+// Batch Adapter (JavaScript) — emit one message per call from a JSON array payload
+return channelUtils.batchJson();   // batchText() for line-delimited text
+
+// Preprocessor / Global Script — build a $c('route') string from source channel/message ids
+channelUtils.mapMessageRoute();
+
+// Response transformer — rule-driven requeue/abort by matching the error message
+channelUtils.responseHandler([
+  {key: 'connection refused', responseStatus: 'QUEUED', maxAttempts: 5},
+  {key: 'duplicate key',      responseStatus: 'SENT',   maxAttempts: 0}
+]);
+
+// Deploy/Preprocessor — fail fast if a dependency isn't on the classpath
 required(['$t', '$retry', 'assert', 'fetch']);
 ```
 
-**A persistent, cross-channel map:**
+### Paginated documents — `Document`
+
+```javascript
+// Splits body text across as many pages as needed; #pageNumber#/#totalPages# fill in per page.
+var doc = new Document({
+  text: reportBody,
+  maxLines: 60, minLines: 60, maxLineLength: 78,
+  header: new Template(['REPORT — page #pageNumber# of #totalPages#']),
+  footer: new Template(['--- end of page #pageNumber# ---'])
+});
+var rendered = doc.toString();   // or doc.toHL7(...) to emit OBX segments
+```
+
+### Databases & persistent maps
 
 ```javascript
 // Deploy Script — create the table once
 var pm = new PersistentMap(JSON.parse($cfg('john_doe_memorial_persistent_map')));
 pm.initialize();
 
-// Anywhere later
+// Anywhere later (any channel) — survives restarts, expires per entry
 var $p = new PersistentMap(JSON.parse($cfg('john_doe_memorial_persistent_map')));
-$p.put('lastSeenMRN', '12345');
-var mrn = $p.get('lastSeenMRN');
+$p.set('lastSeenMRN', '12345');
+var entry = $p.get('lastSeenMRN');   // { key: 'lastSeenMRN', value: '12345' }
 ```
 
-See each file's `@example` block for more.
+> Full DB API — `DBConnection`, `ChannelUtils`, `PersistentMap`, `PersistentChannelMap` — in
+> **[docs/DBConnection.md](docs/DBConnection.md)**.
+
+### The `utils` bridge
+
+Every namespace is also reachable through one object, handy when you only import `utils`:
+
+```javascript
+utils.string.wrapText(text, 80);
+utils.date.getAge('19850315');
+utils.json.stringify(obj);
+// also: utils.array, utils.error, utils.validation, utils.channel
+```
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
@@ -378,8 +500,8 @@ reasons rather than mocked into meaninglessness.
 <!-- ROADMAP -->
 ## Roadmap
 
-- [ ] Expand usage examples for each template
-- [ ] Document the `DBConnection` / `ChannelUtils` API surface
+- [x] Expand usage examples for each template
+- [x] Document the `DBConnection` / `ChannelUtils` API surface ([docs/DBConnection.md](docs/DBConnection.md))
 - [x] Document `HL7Message` rules and validation
 - [x] Vitest harness + tests for the pure, `require()`-able helpers
 - [x] Vitest harness can mock the Java/Mirth surface — proven on `HL7Message` (`java`), `Document` (`createSegment`), and `stringUtils` (`java.util.Base64`)
