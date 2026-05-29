@@ -10,13 +10,14 @@
  * @param {function} [mapError] - optional transform applied to the caught error
  * @return {[*, null]|[null, *]} [data, null] on success, [null, error] on failure
  * @example
- * var result = tryCatch(function () { return fetch('https://example.com/api').json() })
- * // Prefer index access over destructuring; this Rhino build may not support array destructuring.
- * var data = result[0], error = result[1]
+ * // Array destructuring works in Mirth's Rhino (verified on 1.7.13, every languageVersion).
+ * const [data, error] = tryCatch(function () { return fetch('https://example.com/api').json() })
  * if (error) { // handle the error
- * } else if (data == null) { // shouldn't happen, but handle defensively
  * } else { // use data
  * }
+ *
+ * // Index access also works if you prefer it:
+ * // var result = tryCatch(fn); var data = result[0], error = result[1]
  */
 function tryCatch(fn, mapError) {
   try {

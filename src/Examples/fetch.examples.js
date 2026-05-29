@@ -176,11 +176,10 @@ function resilientGet() {
     }
     return res.json()
   }
-  const result = tryCatch(function () {
+  // Array destructuring works in Mirth's Rhino (verified on 1.7.13).
+  const [data, error] = tryCatch(function () {
     return $retry(fetchOnce, { retries: 3, backoff: 1000, throwOnFail: true })
   })
-  const data = result[0]
-  const error = result[1]
   if (error) {
     logger.error('giving up after retries: ' + error)
     return null

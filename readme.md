@@ -259,8 +259,8 @@ var result = $retry(function () {
 **Handle errors explicitly with `tryCatch`** (forces you to deal with the failure path up front, instead of letting an exception escape):
 
 ```javascript
-var result = tryCatch(function () { return fetch('https://example.com/api').json(); });
-var data = result[0], error = result[1]; // index access — Rhino may lack array destructuring
+// Array destructuring works in Mirth's Rhino (verified on 1.7.13).
+const [data, error] = tryCatch(function () { return fetch('https://example.com/api').json(); });
 if (error) {
   logger.error('fetch failed: ' + error);
   return; // handle and bail
