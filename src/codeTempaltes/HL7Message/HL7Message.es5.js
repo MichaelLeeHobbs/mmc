@@ -429,13 +429,20 @@ HL7Message.prototype.set = function (path, value, autoResolve) {
     }
 }
 /**
- * The delete() method removes the specified element from a HL7Message object by path.
- * @todo
- * @param path
+ * Removes the element named by the path. The path depth selects what is removed:
+ * 'SEG' / 'SEG[n]' (a whole segment), 'SEG.f' (a whole field, all repetitions),
+ * 'SEG.f[n]' (one field repetition), 'SEG.f.c' (one component), or 'SEG.f.c.s'
+ * (one subcomponent).
+ * @param {string} path
  */
 HL7Message.prototype.delete = function (path) {
-    const key = this._hl7KeyParser(path)
-    const [seg, segIdx, field, fieldIdx, comp, sub] = key
+    // Parse WITHOUT autoResolve so we delete at exactly the level the path names.
+    // (autoResolve fills comp/sub with '1', which would always take the subcomponent
+    // branch and leave the field / field-repetition / component branches as dead code.)
+    const key = this._hl7KeyParser(path, false)
+    const [seg, rawSegIdx, field, fieldIdx, comp, sub] = key
+    // A segment-only path (e.g. 'NK1') leaves the index unresolved; default to the first match.
+    const segIdx = rawSegIdx > 0 ? rawSegIdx : 1
 
     let ref;
     if (sub) {

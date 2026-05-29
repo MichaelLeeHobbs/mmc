@@ -327,7 +327,7 @@ describe('delete (prod-flagged)', () => {
   let HL7Message
   beforeEach(() => { HL7Message = loadSandbox().module.exports })
 
-  it('delete subcomponent works: delete(PID.5.1) clears that subcomponent', () => {
+  it('delete component works: delete(PID.5.1) removes component 1', () => {
     const m = new HL7Message(ADT, [])
     m.delete('PID.5.1')
     expect(m.get('PID.5.1')).toBeUndefined()
@@ -336,7 +336,7 @@ describe('delete (prod-flagged)', () => {
     expect(m.toString().split('\r')[1]).toContain('^John^A')
   })
 
-  it('delete subcomponent PID.5.2 clears only that subcomponent', () => {
+  it('delete component works: delete(PID.5.2) removes only component 2', () => {
     const m = new HL7Message(ADT, [])
     m.delete('PID.5.2')
     expect(m.get('PID.5.1')).toBe('Doe')
@@ -358,14 +358,13 @@ describe('delete (prod-flagged)', () => {
     expect(m.get('OBX[1].3.1')).toBe('GLU')
   })
 
-  // BUG: delete() calls _hl7KeyParser(path) WITHOUT autoResolve, so it defaults to
-  // autoResolve=true and resolves PID.5 -> [PID,1,5,1,1,1]. delete then takes the
-  // `sub` branch and only removes subcomponent 5.1.1, NOT the whole field. The
-  // field-level (and component-level) branches in delete() are effectively dead code.
-  it.fails('delete(PID.5) should remove the WHOLE field (currently only clears 5.1.1)', () => {
+  // Fixed 2026-05-29: delete() now parses the path WITHOUT autoResolve, so a
+  // field-level path removes the whole field (previously it auto-filled comp/sub
+  // and only cleared subcomponent 5.1.1, leaving the field/component branches dead).
+  it('delete(PID.5) removes the WHOLE field', () => {
     const m = new HL7Message(ADT, [])
     m.delete('PID.5')
-    // EXPECTED correct behavior: the entire PID-5 field is gone.
+    expect(m.get('PID.5.1')).toBeUndefined()
     expect(m.get('PID.5.2')).toBeUndefined()
     expect(m.toString().split('\r')[1]).toContain('PID|1||12345^^^MR|||') // empty PID-5
   })
