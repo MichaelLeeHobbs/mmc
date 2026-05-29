@@ -127,7 +127,12 @@ A self-contained ES5 HL7 v2 message model in a single file: parse a message; rea
 segments, fields, components, subcomponents, and repetitions by path; validate against rules; diff
 two messages; build ACKs; and re-encode. The `Encoding` helper class (HL7 encoding characters,
 `MSH-1`/`MSH-2`) is bundled in the same file. Requires Mirth's `rhinoLanguageVersion` ≥ 180 (it
-uses `let` + object destructuring). Covered by 85 tests in `test/hl7message.test.js`.
+uses `let` + object destructuring). Covered by tests in `test/hl7message.test.js` and
+`test/encoding.test.js`.
+
+📖 **Full API + examples: [docs/HL7Message.md](docs/HL7Message.md)** — path syntax, reading,
+writing, deleting, searching, validation, diffing, ACKs, encoding, and gotchas (every example
+verified against the live code).
 
 ### 💾 Standalone Mirth Backup — [`src/codeTempaltes/StandaloneMirthBackup`](src/codeTempaltes/StandaloneMirthBackup)
 
@@ -372,7 +377,7 @@ Tests currently cover the pure, dependency-light helpers — `tryCatch`, `$t`, `
 
 - [ ] Expand usage examples for each template
 - [ ] Document the `DBConnection` / `ChannelUtils` API surface
-- [ ] Document `HL7Message` rules and validation
+- [x] Document `HL7Message` rules and validation
 - [x] Vitest harness + tests for the pure, `require()`-able helpers
 - [ ] Extend tests to the Java/Mirth-coupled templates (mock `java.*`)
 
