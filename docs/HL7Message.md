@@ -441,6 +441,17 @@ For every segment of `searchPath`'s type, test `searchValue` (a **RegExp**) agai
 `searchPath`. For each match, collect the value at `returnPath` (same segment). Returns a (possibly
 empty) array.
 
+The examples below operate on the shared `ORU` message — its segments repeated here for reference:
+
+```
+MSH|^~\&|LAB|HOSPlab|EHR|HOSP|20240315093000||ORU^R01|MSG0001|P|2.5.1
+PID|1||MRN12345^^^HOSP^MR||Smith^John^Q||19850210|M|||100 Elm St^Apt 2^Boston^MA^02134||617-555-0100~617-555-0199
+OBR|1||ACC987|CBC^Complete Blood Count^L
+OBX|1|NM|WBC^White Blood Cell^L||7.2|10*3/uL|4.0-11.0|N|||F
+OBX|2|NM|HGB^Hemoglobin^L||14.5|g/dL|13.0-17.0|N|||F
+OBX|3|CE|ABO^Blood Group^L||A^Positive&strong||||||F
+```
+
 ```js
 var msg = new HL7Message(ORU);
 
