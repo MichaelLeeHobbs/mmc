@@ -187,6 +187,43 @@ function resilientGet() {
   return data
 }
 
+// 18. Timeouts (non-standard, milliseconds). Pass a single number to bound connect,
+//     socket, and connection-request together, or an object to tune each phase.
+function withTimeouts() {
+  // Simple: 5s ceiling on every phase.
+  const quick = fetch('https://slow.example.com/api', { timeout: 5000 }).json()
+
+  // Per-phase: fail fast if we can't connect, but tolerate a slow response body.
+  const tuned = fetch('https://slow.example.com/report', {
+    timeout: { connect: 2000, socket: 30000, connectionRequest: 1000 },
+  })
+
+  // A connect/socket timeout surfaces as a thrown network error - guard it.
+  try {
+    return fetch('https://maybe-hung.example.com/api', { timeout: 3000 }).json()
+  } catch (e) {
+    logger.error('request timed out or failed: ' + e)
+    return null
+  }
+}
+
+// 19. PATCH a partial update (only POST/PUT/PATCH may carry a body).
+function patchPartial(id, changes) {
+  const res = fetch('https://example.com/api/patients/' + encodeURIComponent(id), {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/merge-patch+json' },
+    body: JSON.stringify(changes),
+  })
+  return res.ok
+}
+
+// 20. Route through an HTTP proxy (non-standard). port defaults to -1 (scheme default).
+function throughProxy() {
+  return fetch('https://partner.example.com/api', {
+    proxy: { host: 'proxy.internal', port: 8080 },
+  }).json()
+}
+
 if (typeof module === 'object') {
   module.exports = {
     getJson,
@@ -207,5 +244,8 @@ if (typeof module === 'object') {
     mutualTls,
     noFollowRedirects,
     resilientGet,
+    withTimeouts,
+    patchPartial,
+    throughProxy,
   }
 }

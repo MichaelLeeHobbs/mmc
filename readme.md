@@ -93,7 +93,7 @@ Mirth. A small `utils` bridge exposes them all under one object (`utils.string`,
 
 | Template | What it does |
 | --- | --- |
-| [`fetch.mirth.js`](src/codeTempaltes/Globals/fetch.mirth.js) | A partial `fetch()` implementation over Apache HttpClient. Supports GET/POST/PUT/DELETE, headers, redirects, self-signed certs (`ignoreSSLError`), **mutual TLS (`clientCert`)**, and `.json()` / `.text()` / `.xml()` / `.byteArray()` body readers. |
+| [`fetch.mirth.js`](src/codeTempaltes/Globals/fetch.mirth.js) | A partial `fetch()` implementation over Apache HttpClient. Supports GET/HEAD/POST/PUT/PATCH/DELETE/OPTIONS, headers, UTF-8 bodies, redirects, **connect/socket/connection-request timeouts (`timeout`)**, **HTTP proxy (`proxy`)**, self-signed certs (`ignoreSSLError`), **mutual TLS (`clientCert`)**, and `.json()` / `.text()` / `.xml()` / `.byteArray()` body readers. |
 | [`stringUtils.js`](src/codeTempaltes/Globals/stringUtils.js) | Text helpers: `atob`/`btoa` (Base-64 via `java.util.Base64`), word-wrap for length-limited fields (`wrapText`, `wrapArray`, `limitElementLength`), line-break encoding, and report parsing (`splitReportText`, `splitFindingsAndImpression`, `filterLinesContaining`). |
 | [`arrayUtils.js`](src/codeTempaltes/Globals/arrayUtils.js) | Array helpers: `fromArrayList` (Java `List`/`ArrayList` → JS array) and `toObject`. |
 | [`dateUtils.js`](src/codeTempaltes/Globals/dateUtils.js) | Date/time helpers: HL7 ⇄ ISO ⇄ `Date` conversions, `convertTimeZone` (IANA zones via `java.time`), `getAge`, `isOlderThan`, and the cross-scope `dateUtils.Timer`. |
@@ -161,10 +161,10 @@ Importable channel XML, including [`StandaloneMirthBackup.xml`](src/channels/Sta
 
 - [`customBatchProcessor.js`](src/Examples/customBatchProcessor.js) — a custom CSV batch processor that treats the
   first row as headers and emits each subsequent row as a JSON object.
-- [`fetch.examples.js`](src/Examples/fetch.examples.js) — 17 `fetch` recipes: GET JSON/XML/text, binary
-  download → attachment, POST JSON/form, Bearer/Basic auth, query params, PUT/DELETE, error-status vs
-  network-error handling, reading response headers, self-signed certs, mutual TLS, disabling redirects, and a
-  retry + `tryCatch` pattern.
+- [`fetch.examples.js`](src/Examples/fetch.examples.js) — 20 `fetch` recipes: GET JSON/XML/text, binary
+  download → attachment, POST JSON/form, Bearer/Basic auth, query params, PUT/PATCH/DELETE, error-status vs
+  network-error handling, reading response headers, self-signed certs, mutual TLS, disabling redirects,
+  connect/socket timeouts, HTTP proxy, and a retry + `tryCatch` pattern.
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
@@ -261,9 +261,15 @@ var res = fetch('https://example.com/api', {
 var secure = fetch('https://secure.example.com/api', {
   clientCert: {path: '/opt/mirth/certs/client.p12', password: 'changeit'}
 }).json();
+
+// Timeouts (ms): a number bounds all phases; an object tunes each one
+fetch('https://slow.example.com/api', {timeout: 5000});
+fetch('https://slow.example.com/api', {
+  timeout: {connect: 2000, socket: 30000, connectionRequest: 1000}
+});
 ```
 
-> 17 more recipes (auth, query params, binary download, headers, redirects, retry) in
+> More recipes (auth, query params, binary download, headers, redirects, timeouts, retry) in
 > [`src/Examples/fetch.examples.js`](src/Examples/fetch.examples.js).
 
 ### Resilience — `$retry`, `tryCatch`, `$t`, `$sleep`

@@ -11,19 +11,20 @@
  *
  * "Partial" - it covers the common request/response surface and omits the parts
  * that don't apply to a blocking, server-side HTTP client:
- *   Supported:     url, method (GET / POST / PUT / DELETE), request headers, a
- *                  string body, redirect follow on/off, response
- *                  status/ok/statusText/headers, and body readers
- *                  json() / text() / xml() / byteArray().
+ *   Supported:     url, method (GET / HEAD / POST / PUT / PATCH / DELETE /
+ *                  OPTIONS), request headers, a UTF-8 string body, redirect
+ *                  follow on/off, connect/socket/connection-request timeouts, an
+ *                  HTTP proxy, response status/ok/statusText/headers, and body
+ *                  readers json() / text() / xml() / byteArray().
  *   Not supported: Promises/async; a `Request` or full `Headers` class;
- *                  AbortController / `signal`; `credentials` / `mode` (CORS) /
+ *                  AbortController / `signal` (use `timeout` instead);
+ *                  `credentials` / `mode` (CORS) /
  *                  `cache` / `referrer` / `integrity` / `keepalive`; non-string or
  *                  streaming bodies (FormData / URLSearchParams / Blob /
  *                  ArrayBuffer - stringify yourself and set Content-Type
  *                  yourself); response `blob()` / `formData()` / `arrayBuffer()` /
- *                  `clone()` / `body`; PATCH / HEAD / OPTIONS; and the
- *                  'manual' / 'error' redirect modes. `response.type` is always
- *                  'default'.
+ *                  `clone()` / `body`; TRACE; and the 'manual' / 'error' redirect
+ *                  modes. `response.type` is always 'default'.
  *
  * Errors: like standard fetch, an HTTP error status (4xx/5xx) does NOT throw -
  * inspect `response.ok` / `response.status`. Network, connection, and TLS
@@ -64,12 +65,32 @@
  *   clientCert: {path: '/opt/mirth/certs/client.p12', password: 'changeit'},
  * })
  *
+ * @example
+ * // Timeouts - a single number (ms) applies to connect + socket + connectionRequest
+ * const res = fetch('https://slow.example.com/api', {timeout: 5000})
+ *
+ * @example
+ * // Per-phase timeouts (ms): fail fast on connect, allow a slow response body
+ * const res = fetch('https://slow.example.com/api', {
+ *   timeout: {connect: 2000, socket: 30000, connectionRequest: 1000},
+ * })
+ *
+ * @example
+ * // Route through an HTTP proxy
+ * const res = fetch('https://partner.example.com/api', {
+ *   proxy: {host: 'proxy.internal', port: 8080},
+ * })
+ *
  * @param {string} url The request URL.
  * @param {object} [options]
- * @param {('GET'|'POST'|'PUT'|'DELETE')} [options.method='GET'] HTTP method. A GET must not carry a body (throws if it does).
+ * @param {('GET'|'HEAD'|'POST'|'PUT'|'PATCH'|'DELETE'|'OPTIONS')} [options.method='GET'] HTTP method (case-insensitive). Only POST/PUT/PATCH may carry a body; supplying `body` for any other method throws. An unsupported method throws a clear error.
  * @param {object|[string,string][]} [options.headers={}] Request headers, as a `{name: value}` object or an array of `[name, value]` pairs. Nothing is inferred - set `Content-Type` yourself when sending a body.
- * @param {string} [options.body] Request body - a STRING only. `JSON.stringify(...)` objects yourself; build form bodies (`a=1&b=2`) yourself.
+ * @param {string} [options.body] Request body - a STRING only, sent UTF-8 encoded. `JSON.stringify(...)` objects yourself; build form bodies (`a=1&b=2`) yourself. Valid only for POST/PUT/PATCH.
  * @param {('follow'|string)} [options.redirect='follow'] 'follow' follows redirects (lax); any other value disables redirect handling.
+ * @param {(number|{connect?:number,socket?:number,connectionRequest?:number})} [options.timeout] Non-standard. Request timeouts in milliseconds. A single number applies to all three Apache timeouts; an object sets them individually: `connect` (establish the TCP connection), `socket` (max gap waiting for response data), `connectionRequest` (wait for a pooled connection). 0 = infinite; negative = system default; omitted = no timeout (Apache default).
+ * @param {object} [options.proxy] Non-standard. Route the request through an HTTP proxy.
+ * @param {string} options.proxy.host Proxy hostname or IP.
+ * @param {number} [options.proxy.port=-1] Proxy port. Defaults to -1 (the scheme's default port).
  * @param {boolean} [options.ignoreSSLError=false] Non-standard. Trust ANY server certificate and skip hostname verification. Use only for self-signed dev endpoints.
  * @param {object} [options.clientCert] Client certificate for mutual TLS (mTLS). The keystore must contain both the client certificate and its private key.
  * @param {string} options.clientCert.path Filesystem path (on the Mirth server) to the keystore file (PKCS12 .p12/.pfx or JKS .jks).
@@ -197,7 +218,7 @@ function fetch(url, options) {
     const {SSLContextBuilder, TrustStrategy} = Packages.org.apache.http.ssl
     const {SSLConnectionSocketFactory} = Packages.org.apache.http.conn.ssl
     const {HttpClients, HttpClientBuilder, LaxRedirectStrategy} = Packages.org.apache.http.impl.client
-    const {HttpGet, HttpPut, HttpPost, HttpDelete, /* HttpOptions, HttpPatch, HttpTrace */} = Packages.org.apache.http.client.methods
+    const {HttpGet, HttpHead, HttpPut, HttpPost, HttpPatch, HttpDelete, HttpOptions} = Packages.org.apache.http.client.methods
 
     var httpClient
     // A custom SSLContext is only required when presenting a client certificate (mTLS)
@@ -252,30 +273,61 @@ function fetch(url, options) {
 
     httpClient = httpClient.build()
 
-    const method = options.method || 'GET'
+    const method = (options.method || 'GET').toUpperCase()
 
-    var httpConfig = undefined
-    if (method.toUpperCase() === 'GET') {
-        httpConfig = new HttpGet(url)
+    // Map each supported method to its Apache request class. Only POST/PUT/PATCH
+    // can carry a body (they extend HttpEntityEnclosingRequestBase); supplying a
+    // body for any other method throws a clear error below.
+    const methodConstructors = {
+        GET: HttpGet, HEAD: HttpHead, POST: HttpPost,
+        PUT: HttpPut, PATCH: HttpPatch, DELETE: HttpDelete, OPTIONS: HttpOptions
     }
-    if (method.toUpperCase() === 'PUT') {
-        httpConfig = new HttpPut(url)
+    const MethodConstructor = methodConstructors[method]
+    if (!MethodConstructor) {
+        throw new Error('Unsupported HTTP method: ' + method + '. Supported: ' + Object.keys(methodConstructors).join(', ') + '.')
     }
-    if (method.toUpperCase() === 'POST') {
-        httpConfig = new HttpPost(url)
-    }
-    if (method.toUpperCase() === 'DELETE') {
-        httpConfig = new HttpDelete(url)
-    }
+    const httpConfig = new MethodConstructor(url)
 
     options.headers.forEach(header => httpConfig.addHeader(header[0], header[1]))
 
-    if (method.toUpperCase() === 'GET' && options.body) {
-        throw new Error('GET requests cannot have a body!')
+    const bodyMethods = {POST: true, PUT: true, PATCH: true}
+    if (options.body && !bodyMethods[method]) {
+        throw new Error(method + ' requests cannot have a body!')
+    }
+    if (options.body) {
+        // Encode as UTF-8: Apache's single-arg StringEntity defaults to ISO-8859-1,
+        // which corrupts non-Latin-1 characters. Mirrors the UTF-8 used when reading
+        // the response body.
+        httpConfig.setEntity(new StringEntity(options.body, 'UTF-8'))
     }
 
-    if (httpConfig && options.body) {
-        httpConfig.setEntity(new StringEntity(options.body))
+    // Per-request config (non-standard): timeouts and/or an upstream HTTP proxy.
+    // `options.timeout` is a single number of milliseconds applied to all three
+    // Apache timeouts, or an object {connect, socket, connectionRequest}:
+    //   connect           -> setConnectTimeout           (establish the TCP connection)
+    //   socket            -> setSocketTimeout            (max gap waiting for response data; SO_TIMEOUT)
+    //   connectionRequest -> setConnectionRequestTimeout (wait for a connection from the pool)
+    // 0 means infinite; a negative value means "use the system default".
+    // `options.proxy` is {host, port} for an HTTP proxy (port defaults to -1 = scheme default).
+    // When neither is set the Apache defaults apply, so prior behavior is unchanged.
+    if ((options.timeout != null || options.proxy) && httpConfig) {
+        const {RequestConfig} = Packages.org.apache.http.client.config
+        const requestConfig = RequestConfig.custom()
+        if (options.timeout != null) {
+            const perPhase = typeof options.timeout === 'object'
+            const connect = perPhase ? options.timeout.connect : options.timeout
+            const socket = perPhase ? options.timeout.socket : options.timeout
+            const connectionRequest = perPhase ? options.timeout.connectionRequest : options.timeout
+            if (connect != null) requestConfig.setConnectTimeout(connect)
+            if (socket != null) requestConfig.setSocketTimeout(socket)
+            if (connectionRequest != null) requestConfig.setConnectionRequestTimeout(connectionRequest)
+        }
+        if (options.proxy) {
+            const {HttpHost} = Packages.org.apache.http
+            const proxyPort = options.proxy.port != null ? options.proxy.port : -1
+            requestConfig.setProxy(new HttpHost(options.proxy.host, proxyPort))
+        }
+        httpConfig.setConfig(requestConfig.build())
     }
 
     const rawResponse = httpClient.execute(httpConfig)

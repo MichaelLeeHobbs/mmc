@@ -33,8 +33,10 @@ function makeChain(opts = {}) {
       __url: url,
       __headers: [],
       __entity: null,
+      __config: null,
       addHeader(k, v) { this.__headers.push([k, v]) },
       setEntity(e) { this.__entity = e },
+      setConfig(c) { this.__config = c },
     }
     calls.requests.push(req)
     return req
@@ -63,8 +65,9 @@ function makeChain(opts = {}) {
       apache: {
         http: {
           entity: {
-            StringEntity: function StringEntity(body) { this.__body = body },
+            StringEntity: function StringEntity(body, charset) { this.__body = body; this.__charset = charset },
           },
+          HttpHost: function HttpHost(host, port) { this.__host = host; this.__port = port },
           ssl: {
             SSLContextBuilder: function SSLContextBuilder() {
               this.loadKeyMaterial = (ks, pw) => { calls.loadKeyMaterial++; this.__ks = ks; this.__keyPw = pw }
@@ -94,9 +97,28 @@ function makeChain(opts = {}) {
           client: {
             methods: {
               HttpGet: function HttpGet(url) { return makeRequestUrl('GET', url) },
+              HttpHead: function HttpHead(url) { return makeRequestUrl('HEAD', url) },
               HttpPut: function HttpPut(url) { return makeRequestUrl('PUT', url) },
               HttpPost: function HttpPost(url) { return makeRequestUrl('POST', url) },
+              HttpPatch: function HttpPatch(url) { return makeRequestUrl('PATCH', url) },
               HttpDelete: function HttpDelete(url) { return makeRequestUrl('DELETE', url) },
+              HttpOptions: function HttpOptions(url) { return makeRequestUrl('OPTIONS', url) },
+            },
+            config: {
+              // RequestConfig.custom() -> chainable builder recording the three timeouts.
+              RequestConfig: {
+                custom: () => {
+                  const cfg = { connectTimeout: null, socketTimeout: null, connectionRequestTimeout: null }
+                  const builder = {
+                    setConnectTimeout(ms) { cfg.connectTimeout = ms; return builder },
+                    setSocketTimeout(ms) { cfg.socketTimeout = ms; return builder },
+                    setConnectionRequestTimeout(ms) { cfg.connectionRequestTimeout = ms; return builder },
+                    setProxy(p) { cfg.proxy = p; return builder },
+                    build() { return cfg },
+                  }
+                  return builder
+                },
+              },
             },
           },
           util: {
@@ -198,6 +220,43 @@ describe('fetch (Apache HttpClient shim)', () => {
     const fetch = load({ Packages })
     fetch('http://x', { method: 'post' })
     expect(calls.requests[0].__ctor).toBe('POST')
+  })
+
+  it('dispatches PATCH/HEAD/OPTIONS', () => {
+    for (const method of ['PATCH', 'HEAD', 'OPTIONS']) {
+      const { Packages, calls } = makeChain()
+      const fetch = load({ Packages })
+      fetch('http://x', { method })
+      expect(calls.requests[0].__ctor).toBe(method)
+    }
+  })
+
+  it('throws a clear error for an unsupported method and never executes', () => {
+    const { Packages, httpClient } = makeChain()
+    const fetch = load({ Packages })
+    expect(() => fetch('http://x', { method: 'TRACE' })).toThrow(/Unsupported HTTP method: TRACE/)
+    expect(httpClient.execute).not.toHaveBeenCalled()
+  })
+
+  it('HEAD with a body throws before executing', () => {
+    const { Packages, httpClient } = makeChain()
+    const fetch = load({ Packages })
+    expect(() => fetch('http://x', { method: 'HEAD', body: 'x' })).toThrow('HEAD requests cannot have a body!')
+    expect(httpClient.execute).not.toHaveBeenCalled()
+  })
+
+  it('PATCH may carry a body', () => {
+    const { Packages, calls } = makeChain()
+    const fetch = load({ Packages })
+    fetch('http://x', { method: 'PATCH', body: 'patch-data' })
+    expect(calls.requests[0].__entity.__body).toBe('patch-data')
+  })
+
+  it('sends the request body encoded as UTF-8 (not Apache default ISO-8859-1)', () => {
+    const { Packages, calls } = makeChain()
+    const fetch = load({ Packages })
+    fetch('http://x', { method: 'POST', body: 'José µg' })
+    expect(calls.requests[0].__entity.__charset).toBe('UTF-8')
   })
 
   it('non-2xx status => ok is false', () => {
@@ -328,6 +387,88 @@ describe('fetch (Apache HttpClient shim)', () => {
     const fetch = load({ Packages })
     fetch('http://x', { redirect: 'manual' })
     expect(calls.redirect).toBe('disabled')
+  })
+
+  it('no timeout option leaves the request config unset (Apache defaults)', () => {
+    const { Packages, calls } = makeChain()
+    const fetch = load({ Packages })
+    fetch('http://x')
+    expect(calls.requests[0].__config).toBeNull()
+  })
+
+  it('a numeric timeout applies to connect, socket, and connectionRequest', () => {
+    const { Packages, calls } = makeChain()
+    const fetch = load({ Packages })
+    fetch('http://x', { timeout: 5000 })
+    expect(calls.requests[0].__config).toEqual({
+      connectTimeout: 5000,
+      socketTimeout: 5000,
+      connectionRequestTimeout: 5000,
+    })
+  })
+
+  it('an object timeout sets each phase individually', () => {
+    const { Packages, calls } = makeChain()
+    const fetch = load({ Packages })
+    fetch('http://x', { timeout: { connect: 2000, socket: 30000, connectionRequest: 1000 } })
+    expect(calls.requests[0].__config).toEqual({
+      connectTimeout: 2000,
+      socketTimeout: 30000,
+      connectionRequestTimeout: 1000,
+    })
+  })
+
+  it('an object timeout leaves omitted phases unset', () => {
+    const { Packages, calls } = makeChain()
+    const fetch = load({ Packages })
+    fetch('http://x', { timeout: { socket: 10000 } })
+    expect(calls.requests[0].__config).toEqual({
+      connectTimeout: null,
+      socketTimeout: 10000,
+      connectionRequestTimeout: null,
+    })
+  })
+
+  it('a zero timeout is applied (Apache treats 0 as infinite, not "unset")', () => {
+    const { Packages, calls } = makeChain()
+    const fetch = load({ Packages })
+    fetch('http://x', { timeout: 0 })
+    expect(calls.requests[0].__config).toEqual({
+      connectTimeout: 0,
+      socketTimeout: 0,
+      connectionRequestTimeout: 0,
+    })
+  })
+
+  it('timeout works on a POST alongside a body', () => {
+    const { Packages, calls } = makeChain()
+    const fetch = load({ Packages })
+    fetch('http://x', { method: 'POST', body: 'payload', timeout: 1500 })
+    expect(calls.requests[0].__entity.__body).toBe('payload')
+    expect(calls.requests[0].__config.connectTimeout).toBe(1500)
+  })
+
+  it('proxy sets an HttpHost on the request config', () => {
+    const { Packages, calls } = makeChain()
+    const fetch = load({ Packages })
+    fetch('http://x', { proxy: { host: 'proxy.internal', port: 8080 } })
+    expect(calls.requests[0].__config.proxy.__host).toBe('proxy.internal')
+    expect(calls.requests[0].__config.proxy.__port).toBe(8080)
+  })
+
+  it('proxy without a port defaults the port to -1', () => {
+    const { Packages, calls } = makeChain()
+    const fetch = load({ Packages })
+    fetch('http://x', { proxy: { host: 'proxy.internal' } })
+    expect(calls.requests[0].__config.proxy.__port).toBe(-1)
+  })
+
+  it('proxy and timeout compose into one request config', () => {
+    const { Packages, calls } = makeChain()
+    const fetch = load({ Packages })
+    fetch('http://x', { timeout: 4000, proxy: { host: 'p', port: 3128 } })
+    expect(calls.requests[0].__config.connectTimeout).toBe(4000)
+    expect(calls.requests[0].__config.proxy.__port).toBe(3128)
   })
 
   it('plain request uses HttpClientBuilder.create (no custom SSL)', () => {
